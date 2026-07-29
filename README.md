@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏘️ JuanForAll
+# 🏘️ juanforall
 
 **A lightweight web application for Barangay San Juan, built with PHP and MySQL.**
 
@@ -14,7 +14,7 @@
 
 ## About
 
-**brgysanjuan** is a simple web-based management system designed for Barangay San Juan. It provides essential digital tools for barangay administration, including resident information management, document processing, and community announcements. Built using core PHP and MySQL, it aims to digitize local government operations in a lightweight and accessible way.
+**juanforall** is a simple web-based management system designed for Barangay San Juan. It provides essential digital tools for barangay administration, including resident information management, document processing, and community announcements. Built using core PHP and MySQL, it aims to digitize local government operations in a lightweight and accessible way.
 
 ---
 
