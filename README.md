@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏘️ Juan-Portal
+# 🏘️ JuanForAll
 
 **A lightweight web application for Barangay San Juan, built with PHP and MySQL.**
 
