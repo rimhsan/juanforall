@@ -4,7 +4,7 @@
 
 **A lightweight web application for Barangay San Juan, built with PHP and MySQL.**
 
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Fbrgysanjuan.vercel.app&label=brgysanjuan.vercel.app&style=for-the-badge&logo=vercel&logoColor=white)](https://brgysanjuan.vercel.app)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fbrgysanjuan.vercel.app&label=brgysanjuan.vercel.app&style=for-the-badge&logo=vercel&logoColor=white)](https://juanforall.vercel.app)
 [![PHP](https://img.shields.io/badge/PHP-8.0+-777BB4?logo=php&logoColor=white)](https://www.php.net)
 [![MySQL](https://img.shields.io/badge/MySQL-5.7+-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com)
 
