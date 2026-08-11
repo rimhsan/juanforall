@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Court Schedule - Barangay San Juan</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Court Schedule - juanforall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">🏛️</div>
-            <h2>Barangay San Juan</h2>
+            <h2>juanforall</h2>
             <p>Iriga City, Camarines Sur</p>
         </div>
         <nav class="sidebar-nav">
@@ -27,9 +29,7 @@
         </nav>
     </aside>
 
-    <!-- Main Content -->
     <div class="main">
-        <!-- Topbar -->
         <div class="topbar">
             <div class="topbar-left">
                 <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
@@ -72,7 +72,6 @@
             </div>
         </div>
 
-        <!-- Content -->
         <div class="content">
             <div class="page-header">
                 <h1 class="page-title">Court Schedule</h1>
@@ -80,7 +79,6 @@
             </div>
             
             <div class="court-layout">
-                <!-- Left Side: Calendar & Controls -->
                 <div class="court-main">
                     <div class="calendar-header">
                         <div class="current-month" id="current-month">Loading...</div>
@@ -91,7 +89,6 @@
                     </div>
                     
                     <div class="calendar-grid" id="calendar-grid">
-                        <!-- Grid Headers -->
                         <div class="day-header">Sun</div>
                         <div class="day-header">Mon</div>
                         <div class="day-header">Tue</div>
@@ -99,7 +96,6 @@
                         <div class="day-header">Thu</div>
                         <div class="day-header">Fri</div>
                         <div class="day-header">Sat</div>
-                        <!-- Days will be injected here by JS -->
                     </div>
                     
                     <div class="bottom-actions">
@@ -107,7 +103,6 @@
                     </div>
                 </div>
 
-                <!-- Right Side: Recent Bookings (Admin Only) -->
                 <div class="court-sidebar" id="admin-court-sidebar" style="display:none;">
                     <div class="card">
                         <div class="card-header">
@@ -125,7 +120,6 @@
         </div>
     </div>
 
-    <!-- Booking Modal -->
     <div class="modal-overlay" id="courtModal">
         <div class="modal">
             <div class="modal-header">
@@ -178,10 +172,8 @@
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
