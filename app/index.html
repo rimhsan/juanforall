@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Barangay San Juan</title>
+    <title>Dashboard - juanforall</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">🏛️</div>
-            <h2>Barangay San Juan</h2>
+            <h2>juanforall</h2>
             <p>Iriga City, Camarines Sur</p>
         </div>
         <nav class="sidebar-nav">
@@ -28,9 +27,7 @@
         </nav>
     </aside>
 
-    <!-- Main Content -->
     <div class="main">
-        <!-- Topbar -->
         <div class="topbar">
             <div class="topbar-left">
                 <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
@@ -48,7 +45,6 @@
                     <span class="dropdown-arrow">▼</span>
                 </div>
 
-                <!-- Profile Dropdown -->
                 <div class="profile-dropdown" id="profileDropdown">
                     <div class="dropdown-header">
                         <div class="dropdown-avatar" id="dropdown-avatar">NO</div>
@@ -74,16 +70,15 @@
             </div>
         </div>
 
-        <!-- Content -->
         <div class="content">
             <h1 class="page-title">Dashboard</h1>
-            <p class="page-subtitle">Welcome back! Here's what's happening in Barangay San Juan.</p>
+            <p class="page-subtitle">Welcome back! Here's what's happening in juanforall.</p>
             
             <div class="stats-grid">
-                <div class="stat-card"><div class="stat-icon" style="background:#eaf2f8; color:#2980b9;">👥</div><div class="stat-value" id="stat-residents">-</div><div class="stat-label">Total Residents</div></div>
-                <div class="stat-card"><div class="stat-icon" style="background:#fef9e7; color:#f39c12;">📝</div><div class="stat-value" id="stat-complaints">-</div><div class="stat-label">Active Complaints</div></div>
-                <div class="stat-card"><div class="stat-icon" style="background:#eafaf1; color:#27ae60;">📋</div><div class="stat-value" id="stat-summons">-</div><div class="stat-label">Pending Summons</div></div>
-                <div class="stat-card"><div class="stat-icon" style="background:#fdedec; color:#e74c3c;">🏟️</div><div class="stat-value" id="stat-court">-</div><div class="stat-label">Court Bookings</div></div>
+                <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="stat-residents">-</div><div class="stat-label">Total Residents</div></div>
+                <div class="stat-card"><div class="stat-icon">📝</div><div class="stat-value" id="stat-complaints">-</div><div class="stat-label">Active Complaints</div></div>
+                <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value" id="stat-summons">-</div><div class="stat-label">Pending Summons</div></div>
+                <div class="stat-card"><div class="stat-icon">🏟️</div><div class="stat-value" id="stat-court">-</div><div class="stat-label">Court Bookings</div></div>
             </div>
 
             <div class="quick-actions">
@@ -107,10 +102,8 @@
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
