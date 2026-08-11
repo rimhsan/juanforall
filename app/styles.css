@@ -1,20 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;700;800&display=swap');
 
-:root,
-[data-theme="dark"] {
-    --bg-color: #1e1e1e;
-    --card-bg: #121212;
-    --element-bg: #2a2a2a;
-    --element-border: #333333;
-    --text-primary: #ffffff;
-    --text-secondary: #a3a3a3;
-    --border-color: #333333;
+:root {
+    --bg-color: #f4f4f5;
+    --card-bg: #ffffff;
+    --element-bg: #efefef;
+    --element-border: #d4d4d8;
+    --text-primary: #09090b;
+    --text-secondary: #52525b;
+    --border-color: #e4e4e7;
 
     --accent-blue: #3b82f6;
     --accent-primary: var(--accent-blue);
     
-    --accent-orange: #ff4c1e;
-    --accent-pink: #f34c9b;
+    --accent-orange: #3b82f6;
+    --accent-pink: #2563eb;
     --accent-green: #22c55e;
     --accent-yellow: #eab308;
     --accent-red: #ef4444;
@@ -23,16 +22,6 @@
     --font-mono: Consolas, 'Fira Code', monospace;
     
     --sidebar-width: 260px;
-}
-
-[data-theme="light"] {
-    --bg-color: #f4f4f5;
-    --card-bg: #ffffff;
-    --element-bg: #efefef;
-    --element-border: #d4d4d8;
-    --text-primary: #09090b;
-    --text-secondary: #52525b;
-    --border-color: #e4e4e7;
 }
 
 *, *::before, *::after {
@@ -275,7 +264,7 @@ body {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 1.25rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     padding: 1rem;
     z-index: 100;
 }
