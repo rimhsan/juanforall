@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Barangay San Juan</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Login - juanforall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
@@ -12,11 +15,10 @@
         <div class="auth-box">
             <div class="auth-header">
                 <div class="auth-logo">🏛️</div>
-                <h1>Barangay San Juan</h1>
+                <h1>juanforall</h1>
                 <p>Iriga City, Camarines Sur</p>
             </div>
             
-            <!-- Login Form -->
             <div id="login-form" class="auth-form">
                 <h2>Welcome Back</h2>
                 <div class="form-group"><label>Email Address</label><input type="email" id="login-email" placeholder="you@example.com"></div>
@@ -25,7 +27,6 @@
                 <p class="auth-switch">Don't have an account? <a href="#" onclick="toggleAuthMode('signup')">Sign up</a></p>
             </div>
             
-            <!-- Signup Form -->
             <div class="auth-form" id="signup-form" style="display: none;">
                 <h2>Create Resident Account</h2>
                 
@@ -71,7 +72,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
