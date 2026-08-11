@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complaints - Barangay San Juan</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Complaints - juanforall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">🏛️</div>
-            <h2>Barangay San Juan</h2>
+            <h2>juanforall</h2>
             <p>Iriga City, Camarines Sur</p>
         </div>
         <nav class="sidebar-nav">
@@ -28,9 +30,7 @@
         </nav>
     </aside>
 
-    <!-- Main Content -->
     <div class="main">
-        <!-- Topbar -->
         <div class="topbar">
             <div class="topbar-left">
                 <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
@@ -73,10 +73,9 @@
             </div>
         </div>
 
-        <!-- Content -->
         <div class="content">
             <h1 class="page-title">Complaints & Concerns</h1>
-            <p class="page-subtitle">File and track community concerns in Barangay San Juan.</p>
+            <p class="page-subtitle">File and track community concerns in juanforall.</p>
             
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
                 <div class="filter-tabs">
@@ -92,60 +91,56 @@
         </div>
     </div>
 
-    <!-- Complaint Modal -->
-<div class="modal-overlay" id="complaintModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h3 id="complaint-modal-title">📝 File a Complaint</h3>
-            <button class="modal-close" onclick="closeModal('complaintModal')">✕</button>
-        </div>
-        <div class="modal-body">
-            <!-- Hidden Input for Edit ID -->
-            <input type="hidden" id="complaint-edit-id">
-            
-            <div class="form-group">
-                <label>Category *</label>
-                <select id="complaint-category">
-                    <option value="">Select category...</option>
-                    <option value="roadwork">🚧 Roadwork</option>
-                    <option value="lightpost">💡 Lightpost</option>
-                    <option value="drainage">🔧 Drainage</option>
-                    <option value="noise">📢 Noise</option>
-                    <option value="garbage">🗑️ Garbage</option>
-                    <option value="other">📌 Other</option>
-                </select>
+    <div class="modal-overlay" id="complaintModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="complaint-modal-title">📝 File a Complaint</h3>
+                <button class="modal-close" onclick="closeModal('complaintModal')">✕</button>
             </div>
-            <div class="form-group">
-                <label>Title *</label>
-                <input type="text" id="complaint-title" placeholder="Brief description">
+            <div class="modal-body">
+                <input type="hidden" id="complaint-edit-id">
+                
+                <div class="form-group">
+                    <label>Category *</label>
+                    <select id="complaint-category">
+                        <option value="">Select category...</option>
+                        <option value="roadwork">🚧 Roadwork</option>
+                        <option value="lightpost">💡 Lightpost</option>
+                        <option value="drainage">🔧 Drainage</option>
+                        <option value="noise">📢 Noise</option>
+                        <option value="garbage">🗑️ Garbage</option>
+                        <option value="other">📌 Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" id="complaint-title" placeholder="Brief description">
+                </div>
+                <div class="form-group">
+                    <label>Description *</label>
+                    <textarea id="complaint-desc" placeholder="Provide details..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Purok *</label>
+                    <select id="complaint-purok">
+                        <option value="">Select purok...</option>
+                        <option value="Purok 1">Purok 1</option>
+                        <option value="Purok 2">Purok 2</option>
+                        <option value="Purok 3">Purok 3</option>
+                        <option value="Purok 4">Purok 4</option>
+                        <option value="Purok 5">Purok 5</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Description *</label>
-                <textarea id="complaint-desc" placeholder="Provide details..."></textarea>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('complaintModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitComplaint()">Submit</button>
             </div>
-            <div class="form-group">
-                <label>Purok *</label>
-                <select id="complaint-purok">
-                    <option value="">Select purok...</option>
-                    <option value="Purok 1">Purok 1</option>
-                    <option value="Purok 2">Purok 2</option>
-                    <option value="Purok 3">Purok 3</option>
-                    <option value="Purok 4">Purok 4</option>
-                    <option value="Purok 5">Purok 5</option>
-                </select>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal('complaintModal')">Cancel</button>
-            <button class="btn btn-primary" onclick="submitComplaint()">Submit</button>
         </div>
     </div>
-</div>
 
-    <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
