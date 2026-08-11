@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scheduled Summons - Barangay San Juan</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Scheduled Summons - juanforall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">🏛️</div>
-            <h2>Barangay San Juan</h2>
+            <h2>juanforall</h2>
             <p>Iriga City, Camarines Sur</p>
         </div>
         <nav class="sidebar-nav">
@@ -27,9 +29,7 @@
         </nav>
     </aside>
 
-    <!-- Main Content -->
     <div class="main">
-        <!-- Topbar -->
         <div class="topbar">
             <div class="topbar-left">
                 <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
@@ -72,12 +72,11 @@
             </div>
         </div>
 
-        <!-- Content -->
         <div class="content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:16px;">
                 <div>
                     <h1 class="page-title">Scheduled Summons</h1>
-                    <p class="page-subtitle">Barangay justice system - scheduled summons and hearings.</p>
+                    <p class="page-subtitle">Justice system - scheduled summons and hearings.</p>
                 </div>
                 <button class="btn btn-primary" id="schedule-summons-btn" style="display:none;" onclick="openSummonsModal()">➕ Schedule Summons</button>
             </div>
@@ -88,7 +87,6 @@
         </div>
     </div>
 
-    <!-- Add/Edit Summons Modal -->
     <div class="modal-overlay" id="summonsModal">
         <div class="modal">
             <div class="modal-header">
@@ -135,10 +133,8 @@
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
