@@ -1,8 +1,8 @@
-const CACHE_NAME = 'bsj-portal-v1';
+const CACHE_NAME = 'juanforall-portal-v1';
 const urlsToCache = [
     '/',
     '/index.html',
-    '/styles.css',
+    '/style.css',
     '/app.js',
     '/manifest.json'
 ];
