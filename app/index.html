@@ -5,15 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barangay San Juan Management System</title>
     
-    <!-- Bricolage Grotesque Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap" rel="stylesheet">
     
-    <!-- Leaflet CSS for Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Main Application Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,7 +20,6 @@
 
     <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
 
-    <!-- Header / Navbar -->
     <header class="navbar">
         <button class="menu-btn" onclick="toggleSidebar()">☰</button>
         <h2>Barangay San Juan Portal</h2>
@@ -51,7 +46,6 @@
         </div>
     </header>
 
-    <!-- Sidebar Navigation -->
     <aside id="sidebar" class="sidebar">
         <nav>
             <a href="index.html">📊 Dashboard</a>
@@ -65,9 +59,7 @@
         </nav>
     </aside>
 
-    <!-- Main Content View -->
     <main class="main-content">
-        <!-- Dashboard Stats -->
         <section class="stats-grid">
             <div class="stat-card">
                 <h3>Total Residents</h3>
@@ -87,14 +79,12 @@
             </div>
         </section>
 
-        <!-- Dynamic Action Buttons -->
         <section class="action-bar" style="margin-top: 20px; display: flex; gap: 10px;">
             <button id="add-announcement-btn" style="display:none;" class="btn btn-primary" onclick="openAnnouncementModal()">📢 Add Announcement</button>
             <button id="schedule-summons-btn" style="display:none;" class="btn btn-primary" onclick="openSummonsModal()">📋 Schedule Summons</button>
             <button id="admin-court-btn" style="display:none;" class="btn btn-primary" onclick="openBookingModal()">🏀 Book Court Slot</button>
         </section>
 
-        <!-- Main Lists Container -->
         <section style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div>
                 <h3>Recent Complaints</h3>
@@ -107,15 +97,11 @@
         </section>
     </main>
 
-    <!-- Firebase Compatibility Libraries -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Main Application JavaScript -->
     <script src="app.js"></script>
 </body>
 </html>
