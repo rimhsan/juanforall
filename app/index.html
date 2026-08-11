@@ -3,105 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barangay San Juan Management System</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
+    <title>Dashboard - Barangay San Juan</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
-
-    <div id="auth-overlay" style="display: flex; position: fixed; inset: 0; background: #ffffff; z-index: 9999; justify-content: center; align-items: center; font-size: 1.2rem;">
-        ⏳ Loading Barangay System...
-    </div>
-
-    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
-
-    <header class="navbar">
-        <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-        <h2>Barangay San Juan Portal</h2>
-        
-        <div class="user-profile-trigger" onclick="toggleProfileDropdown()">
-            <div class="avatar" id="user-avatar">--</div>
-            <div class="user-info">
-                <span id="user-name">Loading...</span>
-                <small id="user-role">Resident</small>
-            </div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">🏛️</div>
+            <h2>Barangay San Juan</h2>
+            <p>Iriga City, Camarines Sur</p>
         </div>
-
-        <div class="profile-dropdown" id="profileDropdown">
-            <div class="dropdown-header">
-                <div class="avatar" id="dropdown-avatar">--</div>
-                <div>
-                    <strong id="dropdown-name">User Name</strong><br>
-                    <small id="dropdown-email">user@email.com</small>
-                </div>
-            </div>
-            <hr>
-            <a href="account.html">👤 Account Settings</a>
-            <button onclick="handleLogout()" class="logout-btn">🚪 Logout</button>
-        </div>
-    </header>
-
-    <aside id="sidebar" class="sidebar">
-        <nav>
-            <a href="index.html">📊 Dashboard</a>
-            <a href="complaints.html">📌 Complaints</a>
-            <a href="announcements.html">📢 Announcements</a>
-            <a href="summons.html">📋 Summons</a>
-            <a href="court.html">🏀 Court Booking</a>
-            <a href="residents.html">👥 Residents Directory</a>
-            <a href="map.html">🗺️ Barangay Map</a>
-            <a href="account.html">⚙️ Account Settings</a>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="active"><span class="icon">📊</span> Dashboard</a>
+            <a href="complaints.html"><span class="icon">📝</span> Complaints & Concerns</a>
+            <a href="residents.html"><span class="icon">👥</span> Residents</a>
+            <div class="nav-section-label">Scheduling</div>
+            <a href="summons.html"><span class="icon">📋</span> Scheduled Summons</a>
+            <a href="court.html"><span class="icon">🏟️</span> Multipurpose Court</a>
+            <div class="nav-section-label">Information</div>
+            <a href="map.html"><span class="icon">🗺️</span> Barangay Map</a>
+            <a href="announcements.html"><span class="icon">📢</span> Announcements</a>
         </nav>
     </aside>
 
-    <main class="main-content">
-        <section class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Residents</h3>
-                <span id="stat-residents">0</span>
+    <div class="main">
+        <div class="topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="search-box"><input type="text" placeholder="Search..." id="globalSearch"></div>
             </div>
-            <div class="stat-card">
-                <h3>Active Complaints</h3>
-                <span id="stat-complaints">0</span>
-            </div>
-            <div class="stat-card">
-                <h3>Active Summons</h3>
-                <span id="stat-summons">0</span>
-            </div>
-            <div class="stat-card">
-                <h3>Court Bookings Today</h3>
-                <span id="stat-court">0</span>
-            </div>
-        </section>
+            <div class="topbar-right">
+                <button class="notification-btn">🔔<span class="notification-badge"></span></button>
+                
+                <div class="user-profile-trigger" onclick="toggleProfileDropdown()">
+                    <div class="user-avatar" id="user-avatar">NO</div>
+                    <div class="user-info-brief">
+                        <span class="user-name" id="user-name">Loading...</span>
+                        <span class="user-role" id="user-role">Resident</span>
+                    </div>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
 
-        <section class="action-bar" style="margin-top: 20px; display: flex; gap: 10px;">
-            <button id="add-announcement-btn" style="display:none;" class="btn btn-primary" onclick="openAnnouncementModal()">📢 Add Announcement</button>
-            <button id="schedule-summons-btn" style="display:none;" class="btn btn-primary" onclick="openSummonsModal()">📋 Schedule Summons</button>
-            <button id="admin-court-btn" style="display:none;" class="btn btn-primary" onclick="openBookingModal()">🏀 Book Court Slot</button>
-        </section>
-
-        <section style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-                <h3>Recent Complaints</h3>
-                <div id="recent-complaints"></div>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="dropdown-header">
+                        <div class="dropdown-avatar" id="dropdown-avatar">NO</div>
+                        <div class="dropdown-details">
+                            <div class="dropdown-name" id="dropdown-name">User Name</div>
+                            <div class="dropdown-email" id="dropdown-email">email</div>
+                            <span class="dropdown-role-tag" id="dropdown-role-tag">Resident</span>
+                        </div>
+                    </div>
+                    <div class="dropdown-body">
+                        <a href="account.html" class="dropdown-link">
+                            <span class="link-icon">👤</span>
+                            <div class="link-text">
+                                <span class="link-title">My Account</span>
+                                <span class="link-desc">Profile, Security & Complaints</span>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="dropdown-footer">
+                        <button class="logout-btn" onclick="handleLogout()">🚪 Sign Out</button>
+                    </div>
+                </div>
             </div>
-            <div>
-                <h3>Recent Court Bookings</h3>
-                <div id="recent-court-bookings"></div>
-            </div>
-        </section>
-    </main>
+        </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <div class="content">
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Welcome back! Here's what's happening in Barangay San Juan.</p>
+            
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-icon" style="background:#eaf2f8; color:#2980b9;">👥</div><div class="stat-value" id="stat-residents">-</div><div class="stat-label">Total Residents</div></div>
+                <div class="stat-card"><div class="stat-icon" style="background:#fef9e7; color:#f39c12;">📝</div><div class="stat-value" id="stat-complaints">-</div><div class="stat-label">Active Complaints</div></div>
+                <div class="stat-card"><div class="stat-icon" style="background:#eafaf1; color:#27ae60;">📋</div><div class="stat-value" id="stat-summons">-</div><div class="stat-label">Pending Summons</div></div>
+                <div class="stat-card"><div class="stat-icon" style="background:#fdedec; color:#e74c3c;">🏟️</div><div class="stat-value" id="stat-court">-</div><div class="stat-label">Court Bookings</div></div>
+            </div>
+
+            <div class="quick-actions">
+                <div class="quick-action" onclick="window.location.href='complaints.html'"><div class="qa-icon">📝</div><div class="qa-label">File Complaint</div></div>
+                <div class="quick-action" onclick="window.location.href='summons.html'"><div class="qa-icon">📋</div><div class="qa-label">View Summons</div></div>
+                <div class="quick-action" onclick="window.location.href='court.html'"><div class="qa-icon">🏟️</div><div class="qa-label">Book Court</div></div>
+                <div class="quick-action" onclick="window.location.href='residents.html'"><div class="qa-icon">👥</div><div class="qa-label">Residents</div></div>
+                <div class="quick-action" onclick="window.location.href='map.html'"><div class="qa-icon">🗺️</div><div class="qa-label">View Map</div></div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header"><h3>📌 Recent Complaints</h3><button class="btn btn-outline btn-sm" onclick="window.location.href='complaints.html'">View All</button></div>
+                    <div class="card-body"><div class="complaint-list" id="recent-complaints"><p style="text-align:center; color:#7f8c8d; padding:20px;">Loading...</p></div></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>🏟️ Recent Court Bookings</h3><button class="btn btn-outline btn-sm" onclick="window.location.href='court.html'">View Calendar</button></div>
+                    <div class="card-body"><div class="court-booking-list" id="recent-court-bookings"><p style="text-align:center; color:#7f8c8d; padding:20px;">Loading...</p></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
