@@ -8,796 +8,427 @@ const firebaseConfig = {
     measurementId: "G-5XWG6ET1CE"
 };
 
-try {
-    firebase.initializeApp(firebaseConfig);
-} catch (e) {
-    console.error("Firebase Init Error:", e);
-    alert("Firebase Configuration Error. Check console.");
-}
-
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let currentUser = null;
-let userRole = 'resident';
-let mapInstance = null;
-let currentMonth = new Date();
-let selectedDate = new Date();
-let allBookings = [];
+const pathName = window.location.pathname;
+const currentPage = pathName.substring(pathName.lastIndexOf('/') + 1) || 'index.html';
+const isAuthPage = currentPage === 'login.html' || currentPage === 'signup.html';
 
-const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-
-const categoryConfig = {
-    roadwork: { label: '🚧 Roadwork', class: 'cat-roadwork' },
-    lightpost: { label: '💡 Lightpost', class: 'cat-lightpost' },
-    drainage: { label: '🔧 Drainage', class: 'cat-drainage' },
-    noise: { label: '📢 Noise', class: 'cat-noise' },
-    garbage: { label: '🗑️ Garbage', class: 'cat-garbage' },
-    other: { label: '📌 Other', class: 'cat-other' },
-    general: { label: '📢 General', class: 'cat-general' }
-};
-
-auth.onAuthStateChanged(async (user) => {
-    const isLoginPage = currentPage === 'login.html';
-    const authOverlay = document.getElementById('auth-overlay');
-    
-    if (user) {
-        currentUser = user;
-        if (isLoginPage) {
-            window.location.href = 'index.html';
-            return;
-        }
-        try {
-            await loadUserProfile();
-            if (authOverlay) authOverlay.style.display = 'none';
-            initializeApp();
-        } catch (error) {
-            console.error("Init Error:", error);
-            if (authOverlay) authOverlay.style.display = 'none';
-        }
-    } else {
-        currentUser = null;
-        if (!isLoginPage) {
-            window.location.href = 'login.html';
-            return;
-        }
-        if (authOverlay) authOverlay.style.display = 'flex';
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    initAuthObserver();
+    initFormListeners();
+    initDropdownToggle();
 });
 
-async function loadUserProfile() {
-    if (!currentUser) return;
-    try {
-        const doc = await db.collection('profiles').doc(currentUser.uid).get();
-        if (doc.exists) {
-            const data = doc.data();
-            userRole = data.role || 'resident';
-            
-            const name = `${data.firstName} ${data.lastName}`;
-            const initials = `${data.firstName[0]}${data.lastName[0]}`.toUpperCase();
-            
-            const setText = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-            
-            setText('user-name', name);
-            setText('user-role', userRole === 'admin' ? 'Admin' : 'Resident');
-            setText('dropdown-name', name);
-            setText('dropdown-email', data.email || currentUser.email);
-            setText('user-avatar', initials);
-            setText('dropdown-avatar', initials);
-            setText('dropdown-role', userRole === 'admin' ? 'Admin' : 'Resident');
-            
-            if (userRole === 'admin') {
-                const showBtn = (id) => { const el = document.getElementById(id); if(el) el.style.display = 'inline-flex'; };
-                showBtn('schedule-summons-btn');
-                showBtn('add-announcement-btn');
-                showBtn('admin-court-btn');
+function initAuthObserver() {
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            if (isAuthPage) {
+                window.location.href = 'index.html';
+            } else {
+                await loadUserProfile(user);
+                initModuleData();
+            }
+        } else {
+            if (!isAuthPage) {
+                window.location.href = 'login.html';
             }
         }
+    });
+}
+
+function initFormListeners() {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+    const signupForm = document.getElementById('signup-form');
+    if (signupForm) signupForm.addEventListener('submit', handleSignup);
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+
+    const summonForm = document.getElementById('summon-form');
+    if (summonForm) summonForm.addEventListener('submit', handleCreateSummon);
+
+    const courtForm = document.getElementById('court-hearing-form');
+    if (courtForm) courtForm.addEventListener('submit', handleCreateCourtHearing);
+
+    const complaintForm = document.getElementById('complaint-form');
+    if (complaintForm) complaintForm.addEventListener('submit', handleCreateComplaint);
+
+    const clearanceForm = document.getElementById('clearance-form');
+    if (clearanceForm) clearanceForm.addEventListener('submit', handleRequestClearance);
+}
+
+function initModuleData() {
+    if (document.getElementById('summon-list')) loadSummons();
+    if (document.getElementById('court-hearings-list')) loadCourtHearings();
+    if (document.getElementById('complaint-list')) loadComplaints();
+    if (document.getElementById('dashboard-stats')) loadDashboardStats();
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        window.location.href = 'index.html';
     } catch (error) {
-        console.error("Profile Load Error:", error);
+        showToast(getReadableErrorMessage(error.code), 'error');
     }
 }
 
-async function initializeApp() {
-    if (currentPage === 'index.html' || currentPage === '') {
-        await updateStats();
-        await loadRecentComplaints();
-        await loadRecentCourtBookings();
+async function handleSignup(e) {
+    e.preventDefault();
+    const fullName = document.getElementById('fullname').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const confirmPassword = document.getElementById('confirm-password').value.trim();
+
+    if (password !== confirmPassword) {
+        showToast('Passwords do not match.', 'error');
+        return;
     }
-    if (currentPage === 'complaints.html') await renderComplaints('all', 'complaintList');
-    if (currentPage === 'residents.html') await renderResidents();
-    if (currentPage === 'summons.html') await renderSummons();
-    if (currentPage === 'court.html') await initCalendar(true);
-    if (currentPage === 'map.html') setTimeout(initMap, 500);
-    if (currentPage === 'announcements.html') await loadAnnouncements();
-    if (currentPage === 'account.html') await loadAccountPage();
+
+    try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        await user.updateProfile({ displayName: fullName });
+
+        await db.collection('users').doc(user.uid).set({
+            uid: user.uid,
+            fullName: fullName,
+            email: email,
+            role: 'Resident',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        window.location.href = 'index.html';
+    } catch (error) {
+        showToast(getReadableErrorMessage(error.code), 'error');
+    }
 }
 
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.toggle('open');
+async function handleLogout() {
+    try {
+        await auth.signOut();
+        window.location.href = 'login.html';
+    } catch (error) {
+        showToast('Failed to log out. Try again.', 'error');
+    }
 }
 
-function openModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.add('show');
+async function handleCreateSummon(e) {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const caseNumber = document.getElementById('summon-case-num').value.trim();
+    const respondentName = document.getElementById('summon-respondent').value.trim();
+    const scheduleDate = document.getElementById('summon-date').value;
+    const venue = document.getElementById('summon-venue').value.trim();
+
+    try {
+        await db.collection('summons').add({
+            caseNumber: caseNumber,
+            respondentName: respondentName,
+            complainantId: user.uid,
+            scheduleDate: scheduleDate,
+            venue: venue,
+            status: 'Issued',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('Summon issued successfully!', 'success');
+        e.target.reset();
+        loadSummons();
+    } catch (error) {
+        showToast('Failed to issue summon.', 'error');
+    }
 }
 
-function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.remove('show');
+async function loadSummons() {
+    const listElement = document.getElementById('summon-list');
+    if (!listElement) return;
+
+    try {
+        const snapshot = await db.collection('summons').orderBy('createdAt', 'desc').get();
+        listElement.innerHTML = '';
+
+        if (snapshot.empty) {
+            listElement.innerHTML = '<p class="text-muted">No active summons issued.</p>';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const item = document.createElement('div');
+            item.className = 'complaint-item';
+            item.innerHTML = `
+                <div>
+                    <strong>Case #${data.caseNumber}</strong> - ${data.respondentName}
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">
+                        Date: ${data.scheduleDate} | Venue: ${data.venue}
+                    </p>
+                </div>
+                <span class="badge badge-warning">${data.status}</span>
+            `;
+            listElement.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Error fetching summons:', error);
+    }
 }
 
-function showToast(message, type = 'success') {
+async function handleCreateCourtHearing(e) {
+    e.preventDefault();
+    const caseTitle = document.getElementById('court-case-title').value.trim();
+    const hearingType = document.getElementById('court-hearing-type').value;
+    const hearingDate = document.getElementById('court-hearing-date').value;
+    const officerInCharge = document.getElementById('court-officer').value.trim();
+
+    try {
+        await db.collection('court_hearings').add({
+            caseTitle: caseTitle,
+            type: hearingType,
+            hearingDate: hearingDate,
+            officerInCharge: officerInCharge,
+            status: 'Scheduled',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('Court/Lupon hearing scheduled.', 'success');
+        e.target.reset();
+        loadCourtHearings();
+    } catch (error) {
+        showToast('Failed to schedule hearing.', 'error');
+    }
+}
+
+async function loadCourtHearings() {
+    const listElement = document.getElementById('court-hearings-list');
+    if (!listElement) return;
+
+    try {
+        const snapshot = await db.collection('court_hearings').orderBy('hearingDate', 'asc').get();
+        listElement.innerHTML = '';
+
+        if (snapshot.empty) {
+            listElement.innerHTML = '<p class="text-muted">No scheduled court hearings.</p>';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const item = document.createElement('div');
+            item.className = 'complaint-item';
+            item.innerHTML = `
+                <div>
+                    <strong>${data.caseTitle}</strong> (${data.type})
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">
+                        Hearing Date: ${data.hearingDate} | Presiding: ${data.officerInCharge}
+                    </p>
+                </div>
+                <span class="badge badge-info">${data.status}</span>
+            `;
+            listElement.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Error fetching court hearings:', error);
+    }
+}
+
+async function handleCreateComplaint(e) {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const category = document.getElementById('complaint-category').value;
+    const details = document.getElementById('complaint-details').value.trim();
+
+    try {
+        await db.collection('complaints').add({
+            userId: user.uid,
+            category: category,
+            details: details,
+            status: 'Pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('Complaint submitted.', 'success');
+        e.target.reset();
+        loadComplaints();
+    } catch (error) {
+        showToast('Failed to submit complaint.', 'error');
+    }
+}
+
+async function loadComplaints() {
+    const listElement = document.getElementById('complaint-list');
+    if (!listElement) return;
+
+    try {
+        const snapshot = await db.collection('complaints').orderBy('createdAt', 'desc').get();
+        listElement.innerHTML = '';
+
+        if (snapshot.empty) {
+            listElement.innerHTML = '<p class="text-muted">No complaints reported.</p>';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const item = document.createElement('div');
+            item.className = 'complaint-item';
+            item.innerHTML = `
+                <div>
+                    <strong>${data.category}</strong>
+                    <p style="font-size: 0.85rem; margin-top:4px;">${data.details}</p>
+                </div>
+                <span class="badge">${data.status}</span>
+            `;
+            listElement.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Error loading complaints:', error);
+    }
+}
+
+async function handleRequestClearance(e) {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const documentType = document.getElementById('clearance-type').value;
+    const purpose = document.getElementById('clearance-purpose').value.trim();
+
+    try {
+        await db.collection('clearance_requests').add({
+            userId: user.uid,
+            documentType: documentType,
+            purpose: purpose,
+            status: 'Processing',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('Request submitted successfully.', 'success');
+        e.target.reset();
+    } catch (error) {
+        showToast('Failed to send request.', 'error');
+    }
+}
+
+async function loadDashboardStats() {
+    try {
+        const complaintsSnap = await db.collection('complaints').get();
+        const summonsSnap = await db.collection('summons').get();
+        const hearingsSnap = await db.collection('court_hearings').get();
+
+        const countComplaints = document.getElementById('stat-complaints-count');
+        const countSummons = document.getElementById('stat-summons-count');
+        const countHearings = document.getElementById('stat-hearings-count');
+
+        if (countComplaints) countComplaints.textContent = complaintsSnap.size;
+        if (countSummons) countSummons.textContent = summonsSnap.size;
+        if (countHearings) countHearings.textContent = hearingsSnap.size;
+    } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+    }
+}
+
+async function loadUserProfile(user) {
+    try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        let userData = {
+            fullName: user.displayName || user.email.split('@')[0],
+            role: 'Resident'
+        };
+
+        if (doc.exists) {
+            userData = { ...userData, ...doc.data() };
+        }
+
+        updateUIElements(userData);
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+    }
+}
+
+function updateUIElements(data) {
+    const nameElements = document.querySelectorAll('.user-name');
+    const roleElements = document.querySelectorAll('.user-role');
+    const avatarElements = document.querySelectorAll('.user-avatar, .dropdown-avatar');
+
+    const initials = data.fullName
+        ? data.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+        : 'U';
+
+    nameElements.forEach(el => el.textContent = data.fullName);
+    roleElements.forEach(el => el.textContent = data.role);
+    avatarElements.forEach(el => el.textContent = initials);
+}
+
+function initDropdownToggle() {
+    const trigger = document.querySelector('.user-profile-trigger');
+    const dropdown = document.querySelector('.profile-dropdown');
+
+    if (trigger && dropdown) {
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('show');
+        });
+
+        document.addEventListener('click', () => {
+            if (dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        });
+    }
+}
+
+function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
-    if (!container) return;
+    if (!container) {
+        alert(message);
+        return;
+    }
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast.innerHTML = `${type === 'success' ? '✅' : '❌'} ${message}`;
+    toast.style.cssText = `
+        background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#2563eb'};
+        color: #ffffff;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-top: 8px;
+        font-size: 0.875rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        transition: opacity 0.3s ease;
+    `;
+    toast.textContent = message;
+
     container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-window.toggleProfileDropdown = function() {
-    const dropdown = document.getElementById('profileDropdown');
-    const trigger = document.querySelector('.user-profile-trigger');
-    if (dropdown) {
-        dropdown.classList.toggle('show');
-        if (trigger) trigger.classList.toggle('active');
+function getReadableErrorMessage(code) {
+    switch (code) {
+        case 'auth/invalid-email':
+            return 'Invalid email address format.';
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            return 'Invalid email or password.';
+        case 'auth/email-already-in-use':
+            return 'This email address is already registered.';
+        case 'auth/weak-password':
+            return 'Password must be at least 6 characters long.';
+        default:
+            return 'An unexpected error occurred. Please try again.';
     }
-};
-
-document.addEventListener('click', function(e) {
-    const dropdown = document.getElementById('profileDropdown');
-    const trigger = document.querySelector('.user-profile-trigger');
-    if (dropdown && trigger && !trigger.contains(e.target) && !dropdown.contains(e.target)) {
-        dropdown.classList.remove('show');
-        if(trigger) trigger.classList.remove('active');
-    }
-});
-
-async function handleLogout() { 
-    await auth.signOut(); 
-    window.location.href = 'login.html'; 
-}
-
-async function updateStats() {
-    if (!document.getElementById('stat-residents')) return;
-    try {
-        const resSnap = await db.collection('profiles').get();
-        const compSnap = await db.collection('complaints').get();
-        let activeComplaints = 0;
-        compSnap.forEach(doc => {
-            if (doc.data().status !== 'resolved') activeComplaints++;
-        });
-        
-        const sumSnap = await db.collection('summons').where('status', '==', 'confirmed').get();
-        const today = new Date().toISOString().split('T')[0];
-        const courtSnap = await db.collection('courtBookings').where('date', '==', today).get();
-        
-        const setStat = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-        setStat('stat-residents', resSnap.size);
-        setStat('stat-complaints', activeComplaints);
-        setStat('stat-summons', sumSnap.size);
-        setStat('stat-court', courtSnap.size);
-    } catch (e) { console.error(e); }
-}
-
-async function loadRecentComplaints() {
-    const container = document.getElementById('recent-complaints');
-    if (!container) return;
-    try {
-        const snap = await db.collection('complaints').orderBy('createdAt', 'desc').limit(3).get();
-        if (snap.empty) { container.innerHTML = '<p style="text-align:center;color:#7f8c8d;padding:20px;">No recent complaints.</p>'; return; }
-        container.innerHTML = snap.docs.map(doc => {
-            const c = doc.data();
-            return `<div class="complaint-item" style="padding:14px;"><div class="complaint-header"><span class="complaint-category cat-${c.category||'other'}">${categoryConfig[c.category]?.label||'📌 Other'}</span></div><div class="complaint-title">${escapeHtml(c.title)}</div></div>`;
-        }).join('');
-    } catch (e) { container.innerHTML = '<p>Error.</p>'; }
-}
-
-async function loadRecentCourtBookings() {
-    const container = document.getElementById('recent-court-bookings');
-    if (!container) return;
-    try {
-        const snap = await db.collection('courtBookings').orderBy('createdAt', 'desc').limit(5).get();
-        const bookings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).slice(0, 5);
-        if (bookings.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:#7f8c8d;padding:20px;">No recent bookings.</p>';
-            return;
-        }
-        container.innerHTML = bookings.map(b => {
-            const time = (b.startTime && b.endTime) ? `${formatTime(b.startTime)} - ${formatTime(b.endTime)}` : 'All Day';
-            return `
-                <div class="court-booking-item ${b.isAdminBooking ? 'admin' : ''}">
-                    <div class="court-booking-header">
-                        <span class="court-booking-time">${time}</span>
-                        <span class="court-booking-date">${new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                    <div class="court-booking-name">${escapeHtml(b.bookerName)}</div>
-                    <div class="court-booking-activity">${escapeHtml(b.activity)}</div>
-                </div>
-            `;
-        }).join('');
-    } catch (e) { container.innerHTML = '<p>Error.</p>'; }
-}
-
-function formatTime(timeStr) {
-    if (!timeStr) return '';
-    const [h, m] = timeStr.split(':');
-    const hour = parseInt(h);
-    return `${hour % 12 || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
-}
-
-async function renderComplaints(filter = 'all', elementId = 'complaintList') {
-    const container = document.getElementById(elementId);
-    if (!container) return;
-    container.innerHTML = '<p style="text-align:center;padding:40px;color:#7f8c8d;">⏳ Loading...</p>';
-    
-    try {
-        const snap = await db.collection('complaints').orderBy('createdAt', 'desc').get();
-        let complaints = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (filter !== 'all') complaints = complaints.filter(c => c.status === filter);
-        
-        if (complaints.length === 0) { 
-            container.innerHTML = '<p style="text-align:center;padding:40px;color:#7f8c8d;">No complaints found.</p>'; 
-            return; 
-        }
-        
-        container.innerHTML = complaints.map(c => `
-            <div class="complaint-item">
-                <div class="complaint-header">
-                    <span class="complaint-category ${categoryConfig[c.category]?.class || 'cat-other'}">
-                        ${categoryConfig[c.category]?.label || '📌 Other'}
-                    </span>
-                    ${userRole === 'admin' ? `
-                        <div style="display:flex; gap:8px;">
-                            <select class="status-dropdown" onchange="updateComplaintStatus('${c.id}', this.value)">
-                                <option value="pending" ${c.status === 'pending' ? 'selected' : ''}>⏳ Pending</option>
-                                <option value="progress" ${c.status === 'progress' ? 'selected' : ''}>🔄 In Progress</option>
-                                <option value="resolved" ${c.status === 'resolved' ? 'selected' : ''}>✅ Resolved</option>
-                            </select>
-                        </div>
-                    ` : `
-                        <span class="status-badge status-${c.status || 'pending'}">
-                            <span class="status-dot"></span> ${c.status === 'progress' ? 'In Progress' : (c.status === 'resolved' ? 'Resolved' : 'Pending')}
-                        </span>
-                    `}
-                </div>
-                <div class="complaint-title">${escapeHtml(c.title)}</div>
-                <div class="complaint-desc">${escapeHtml(c.description)}</div>
-                <div class="complaint-meta">
-                    <span>👤 ${escapeHtml(c.userName)}</span>
-                    <span>📍 ${escapeHtml(c.purok)}</span>
-                    <span>🕐 ${c.createdAt ? new Date(c.createdAt.toDate()).toLocaleDateString() : 'N/A'}</span>
-                </div>
-                ${userRole === 'admin' ? `
-                    <div style="margin-top:16px; display:flex; gap:8px; border-top:1px solid var(--border); padding-top:12px;">
-                        <button class="btn btn-sm btn-outline" onclick="openEditComplaintModal('${c.id}')">✏️ Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteComplaint('${c.id}')">🗑️ Delete</button>
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
-    } catch (e) { 
-        console.error(e);
-        container.innerHTML = '<p style="text-align:center;color:var(--danger);padding:20px;">Error loading complaints.</p>'; 
-    }
-}
-
-async function updateComplaintStatus(id, status) {
-    if (userRole !== 'admin') return;
-    try {
-        await db.collection('complaints').doc(id).update({ status });
-        showToast(`Updated to ${status}`, 'success');
-        renderComplaints();
-    } catch (error) {
-        showToast('Failed: ' + error.message, 'danger');
-    }
-}
-
-async function openEditComplaintModal(id) {
-    if (userRole !== 'admin') return;
-    try {
-        const doc = await db.collection('complaints').doc(id).get();
-        if (doc.exists) {
-            const data = doc.data();
-            document.getElementById('complaint-edit-id').value = id;
-            document.getElementById('complaint-category').value = data.category;
-            document.getElementById('complaint-title').value = data.title;
-            document.getElementById('complaint-desc').value = data.description;
-            document.getElementById('complaint-purok').value = data.purok;
-            document.getElementById('complaint-modal-title').textContent = '✏️ Edit Complaint';
-            openModal('complaintModal');
-        }
-    } catch (e) { showToast('Error loading complaint', 'danger'); }
-}
-
-async function deleteComplaint(id) {
-    if (userRole !== 'admin') return;
-    if (!confirm('Are you sure you want to delete this complaint?')) return;
-    try {
-        await db.collection('complaints').doc(id).delete();
-        showToast('Complaint deleted', 'success');
-        renderComplaints();
-    } catch (e) { showToast('Failed to delete', 'danger'); }
-}
-
-async function submitComplaint() {
-    const category = document.getElementById('complaint-category')?.value;
-    const title = document.getElementById('complaint-title')?.value.trim();
-    const desc = document.getElementById('complaint-desc')?.value.trim();
-    const purok = document.getElementById('complaint-purok')?.value;
-    const editId = document.getElementById('complaint-edit-id')?.value;
-
-    if (!category || !title || !desc || !purok) { showToast('Fill all fields.', 'warning'); return; }
-
-    try {
-        const data = { category, title, description: desc, purok };
-        if (editId) {
-            await db.collection('complaints').doc(editId).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-            showToast('Complaint updated!', 'success');
-        } else {
-            await db.collection('complaints').add({ ...data, userId: currentUser.uid, userName: currentUser.email, status: 'pending', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-            showToast('Complaint filed!', 'success');
-        }
-        closeModal('complaintModal');
-        renderComplaints();
-        document.getElementById('complaint-edit-id').value = '';
-        ['complaint-category', 'complaint-title', 'complaint-desc', 'complaint-purok'].forEach(id => { 
-            const el = document.getElementById(id); if(el) el.value = ''; 
-        });
-    } catch (e) { showToast('Failed: ' + e.message, 'danger'); }
-}
-
-function filterComplaints(filter, btn) {
-    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-    if(btn) btn.classList.add('active');
-    renderComplaints(filter);
-}
-
-async function renderResidents() {
-    const container = document.getElementById('residentGrid');
-    if (!container) return;
-    container.innerHTML = '<p style="text-align:center;padding:40px;color:#7f8c8d;">Loading...</p>';
-    try {
-        const snap = await db.collection('profiles').orderBy('lastName').get();
-        const residents = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        container.innerHTML = residents.map(r => `
-            <div class="resident-card">
-                <div class="resident-avatar" style="background:${stringToColor((r.firstName||'')+(r.lastName||''))}">${(r.firstName?.[0]||'U')}${(r.lastName?.[0]||'')}</div>
-                <div class="resident-name">${escapeHtml(r.firstName)} ${escapeHtml(r.lastName)}</div>
-                <div class="resident-address">${escapeHtml(r.purok)}</div>
-            </div>
-        `).join('');
-    } catch (e) { container.innerHTML = '<p>Error.</p>'; }
-}
-
-function stringToColor(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    const c = (hash & 0x00ffffff).toString(16).toUpperCase();
-    return '#' + '00000'.substring(0, 6 - c.length) + c;
-}
-
-async function renderSummons() {
-    const container = document.getElementById('summonsList');
-    if (!container) return;
-    container.innerHTML = '<p style="text-align:center;padding:40px;color:#7f8c8d;">Loading...</p>';
-    try {
-        const snap = await db.collection('summons').orderBy('date', 'asc').get();
-        const summons = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (summons.length === 0) { container.innerHTML = '<p style="text-align:center;padding:40px;color:#7f8c8d;">No summons.</p>'; return; }
-        
-        container.innerHTML = summons.map(s => `
-            <div class="summons-card">
-                <div class="summons-info">
-                    <h4>${escapeHtml(s.caseTitle)}</h4>
-                    <p>${escapeHtml(s.complainantName)} vs ${escapeHtml(s.respondentName)}</p>
-                </div>
-                <div class="summons-date">
-                    <div class="date">${s.date}</div>
-                    <div class="time">${s.time}</div>
-                    ${userRole === 'admin' ? `
-                    <div style="display:flex; gap:6px; margin-top:6px;">
-                        <button class="btn btn-sm btn-outline" onclick="openEditSummonsModal('${s.id}')">✏️</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteSummons('${s.id}')">🗑️</button>
-                    </div>
-                    ` : `<span class="status-badge status-confirmed"><span class="status-dot"></span> Confirmed</span>`}
-                </div>
-            </div>
-        `).join('');
-    } catch (e) { container.innerHTML = '<p>Error.</p>'; }
-}
-
-async function openEditSummonsModal(id) {
-    if (userRole !== 'admin') return;
-    try {
-        const doc = await db.collection('summons').doc(id).get();
-        if (doc.exists) {
-            const data = doc.data();
-            document.getElementById('summons-edit-id').value = id;
-            document.getElementById('summons-complainant').value = data.complainantName;
-            document.getElementById('summons-respondent').value = data.respondentName;
-            document.getElementById('summons-case').value = data.caseTitle;
-            document.getElementById('summons-date').value = data.date;
-            document.getElementById('summons-time').value = data.time;
-            document.getElementById('summons-location').value = data.location;
-            document.getElementById('summons-modal-title').textContent = '✏️ Edit Summons';
-            openModal('summonsModal');
-        }
-    } catch (e) { showToast('Error loading summons', 'danger'); }
-}
-
-async function deleteSummons(id) {
-    if (userRole !== 'admin') return;
-    if (!confirm('Delete this summons?')) return;
-    try {
-        await db.collection('summons').doc(id).delete();
-        showToast('Summons deleted', 'success');
-        renderSummons();
-    } catch (e) { showToast('Failed to delete', 'danger'); }
-}
-
-async function saveSummons() {
-    const c = document.getElementById('summons-complainant')?.value.trim();
-    const r = document.getElementById('summons-respondent')?.value.trim();
-    const caseT = document.getElementById('summons-case')?.value.trim();
-    const d = document.getElementById('summons-date')?.value;
-    const t = document.getElementById('summons-time')?.value;
-    const l = document.getElementById('summons-location')?.value;
-    const editId = document.getElementById('summons-edit-id')?.value;
-    
-    if (!c || !r || !caseT || !d || !t) { showToast('Fill all fields.', 'warning'); return; }
-
-    try {
-        const data = { complainantName: c, respondentName: r, caseTitle: caseT, date: d, time: t, location: l };
-        if (editId) {
-            await db.collection('summons').doc(editId).update({ ...data, status: 'confirmed' });
-            showToast('Summons updated!', 'success');
-        } else {
-            await db.collection('summons').add({ ...data, status: 'confirmed', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-            showToast('Summons scheduled!', 'success');
-        }
-        closeModal('summonsModal');
-        renderSummons();
-        document.getElementById('summons-edit-id').value = '';
-    } catch (e) { showToast('Failed: ' + e.message, 'danger'); }
-}
-
-function openSummonsModal() {
-    document.getElementById('summons-edit-id').value = '';
-    document.getElementById('summons-complainant').value = '';
-    document.getElementById('summons-respondent').value = '';
-    document.getElementById('summons-case').value = '';
-    document.getElementById('summons-date').value = '';
-    document.getElementById('summons-time').value = '';
-    document.getElementById('summons-location').value = 'Barangay Hall - Conference Room';
-    document.getElementById('summons-modal-title').textContent = '📋 Schedule Summons';
-    openModal('summonsModal');
-}
-
-function getLocalDateString(dateObj) {
-    const y = dateObj.getFullYear();
-    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const d = String(dateObj.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
-
-async function initCalendar(resetDate = false) {
-    if (resetDate) {
-        currentMonth = new Date();
-        selectedDate = new Date();
-    }
-    
-    const adminSidebar = document.getElementById('admin-court-sidebar');
-    if (adminSidebar) {
-        adminSidebar.style.display = userRole === 'admin' ? 'block' : 'none';
-        if (userRole === 'admin') await loadAdminRecentBookings();
-    }
-
-    renderCalendarHeader();
-    await fetchMonthBookings();
-    renderCalendarGrid();
-}
-
-async function loadAdminRecentBookings() {
-    const container = document.getElementById('admin-recent-bookings-list');
-    if (!container) return;
-    try {
-        const snap = await db.collection('courtBookings').orderBy('createdAt', 'desc').limit(10).get();
-        const bookings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (bookings.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:#7f8c8d;font-size:13px;padding:20px;">No bookings found.</p>';
-            return;
-        }
-        container.innerHTML = bookings.map(b => {
-            const time = (b.startTime && b.endTime) ? `${b.startTime} - ${b.endTime}` : 'All Day';
-            return `
-                <div class="admin-booking-item" onclick="openEditBookingModal('${b.id}')">
-                    <div class="admin-booking-time">${time}</div>
-                    <div class="admin-booking-name">${escapeHtml(b.bookerName)}</div>
-                    <div class="admin-booking-activity">${escapeHtml(b.activity)} • ${b.date}</div>
-                </div>
-            `;
-        }).join('');
-    } catch (e) { container.innerHTML = '<p style="color:var(--danger);font-size:13px;">Error loading.</p>'; }
-}
-
-function renderCalendarHeader() {
-    const el = document.getElementById('current-month');
-    if(el) el.textContent = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
-
-async function fetchMonthBookings() {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const startOfMonth = getLocalDateString(new Date(year, month, 1));
-    const endOfMonth = getLocalDateString(new Date(year, month + 1, 0));
-    try {
-        const snapshot = await db.collection('courtBookings').where('date', '>=', startOfMonth).where('date', '<=', endOfMonth).get();
-        allBookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) { allBookings = []; }
-}
-
-function renderCalendarGrid() {
-    const grid = document.getElementById('calendar-grid');
-    if(!grid) return;
-    const headers = Array.from(grid.children).slice(0, 7);
-    grid.innerHTML = '';
-    headers.forEach(h => grid.appendChild(h));
-    
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDayOfMonth = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const todayStr = getLocalDateString(new Date());
-    const selectedStr = getLocalDateString(selectedDate);
-    
-    for (let i = 0; i < firstDayOfMonth; i++) grid.appendChild(document.createElement('div'));
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayBookings = allBookings.filter(b => b.date === dateStr);
-        const cell = document.createElement('div');
-        cell.className = `calendar-day ${dateStr === todayStr ? 'today' : ''} ${dateStr === selectedStr ? 'selected' : ''}`;
-        cell.onclick = () => { selectedDate = new Date(year, month, day); renderCalendarGrid(); };
-        
-        let bookingsHtml = '';
-        if (dayBookings.length > 0) {
-            bookingsHtml = '<div class="grid-bookings">';
-            dayBookings.forEach(b => {
-                const time = (b.startTime && b.endTime) ? `${b.startTime} - ${b.endTime}` : 'All Day';
-                const clickAction = userRole === 'admin' ? `onclick="event.stopPropagation(); openEditBookingModal('${b.id}')"` : '';
-                bookingsHtml += `<div class="grid-booking ${b.isAdminBooking ? 'admin' : ''}" ${clickAction}>
-                    <div class="grid-time">${time}</div>
-                    <div class="grid-name">${escapeHtml(b.bookerName)}</div>
-                </div>`;
-            });
-            bookingsHtml += '</div>';
-        }
-        cell.innerHTML = `<div class="day-number">${day}</div>${bookingsHtml}`;
-        grid.appendChild(cell);
-    }
-}
-
-function changeMonth(delta) { currentMonth.setMonth(currentMonth.getMonth() + delta); initCalendar(false); }
-
-function openBookingModal() {
-    document.getElementById('court-booking-edit-id').value = '';
-    document.getElementById('court-date').value = getLocalDateString(selectedDate);
-    document.getElementById('court-booker').value = '';
-    document.getElementById('court-start-time').value = '';
-    document.getElementById('court-end-time').value = '';
-    document.getElementById('court-activity').value = 'Basketball';
-    document.getElementById('court-modal-title').textContent = '📅 Book Court Slot';
-    document.getElementById('btn-delete-booking').style.display = 'none';
-    openModal('courtModal');
-}
-
-async function openEditBookingModal(id) {
-    if (userRole !== 'admin') return;
-    try {
-        const doc = await db.collection('courtBookings').doc(id).get();
-        if (doc.exists) {
-            const data = doc.data();
-            document.getElementById('court-booking-edit-id').value = id;
-            document.getElementById('court-booker').value = data.bookerName;
-            document.getElementById('court-date').value = data.date;
-            document.getElementById('court-start-time').value = data.startTime;
-            document.getElementById('court-end-time').value = data.endTime;
-            document.getElementById('court-activity').value = data.activity;
-            document.getElementById('court-modal-title').textContent = '✏️ Edit Booking';
-            document.getElementById('btn-delete-booking').style.display = 'inline-flex';
-            openModal('courtModal');
-        }
-    } catch (e) { showToast('Error loading booking', 'danger'); }
-}
-
-async function deleteCurrentBooking() {
-    const editId = document.getElementById('court-booking-edit-id')?.value;
-    if (!editId) return;
-    if (!confirm('Delete this booking?')) return;
-    try {
-        await db.collection('courtBookings').doc(editId).delete();
-        showToast('Booking deleted', 'success');
-        closeModal('courtModal');
-        await fetchMonthBookings();
-        renderCalendarGrid();
-        if (userRole === 'admin') await loadAdminRecentBookings();
-    } catch (e) { showToast('Failed', 'danger'); }
-}
-
-function toMinutes(t) { if (!t) return 0; const [h, m] = t.split(':').map(Number); return h * 60 + m; }
-
-async function bookCourt() {
-    const name = document.getElementById('court-booker')?.value.trim();
-    const date = document.getElementById('court-date')?.value;
-    const start = document.getElementById('court-start-time')?.value;
-    const end = document.getElementById('court-end-time')?.value;
-    const activity = document.getElementById('court-activity')?.value;
-    const editId = document.getElementById('court-booking-edit-id')?.value;
-
-    if (!name || !date || !start || !end) return showToast('Fill all fields.', 'warning');
-    if (start >= end) return showToast('End time must be after start.', 'warning');
-    if (parseInt(start.split(':')[0]) < 6 || parseInt(end.split(':')[0]) > 19) return showToast('Court hours: 6 AM - 7 PM', 'warning');
-
-    try {
-        if (!editId) {
-            if (allBookings.some(b => b.date === date && toMinutes(start) < toMinutes(b.endTime) && toMinutes(end) > toMinutes(b.startTime))) return showToast('Slot overlaps!', 'danger');
-            await db.collection('courtBookings').add({ userId: currentUser.uid, bookerName: name, date, startTime: start, endTime: end, activity, isAdminBooking: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-            showToast('Booked!', 'success');
-        } else {
-            await db.collection('courtBookings').doc(editId).update({ bookerName: name, startTime: start, endTime: end, activity, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-            showToast('Updated!', 'success');
-        }
-        closeModal('courtModal'); await fetchMonthBookings(); renderCalendarGrid(); document.getElementById('court-booking-edit-id').value = ''; document.getElementById('court-booker').value = '';
-    } catch (e) { showToast('Failed: ' + e.message, 'danger'); }
-}
-
-async function loadAnnouncements() {
-    const container = document.getElementById('announcementsList');
-    const addBtn = document.getElementById('add-announcement-btn');
-    
-    if (!container) return;
-    
-    if (userRole === 'admin') {
-        if (addBtn) addBtn.style.display = 'inline-flex';
-    } else {
-        if (addBtn) addBtn.style.display = 'none';
-    }
-
-    container.innerHTML = '<p style="text-align:center; color:#7f8c8d; padding:60px 20px;">⏳ Loading...</p>';
-    
-    try {
-        const snap = await db.collection('announcements').orderBy('createdAt', 'desc').get();
-        const announcements = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        if (announcements.length === 0) { 
-            container.innerHTML = '<p style="text-align:center; color:#7f8c8d; padding:60px 20px;">📭 No announcements yet.</p>'; 
-            return; 
-        }
-        
-        container.innerHTML = announcements.map(a => {
-            const categoryLabel = categoryConfig[a.category]?.label || '📢 General';
-            const categoryClass = categoryConfig[a.category]?.class || 'cat-general';
-            return `
-                <div class="announcement-card">
-                    <div class="announcement-header">
-                        <span class="complaint-category ${categoryClass}">${categoryLabel}</span>
-                        <span class="announcement-date">🗓️ ${a.createdAt ? new Date(a.createdAt.toDate()).toLocaleDateString() : 'N/A'}</span>
-                    </div>
-                    <h3 class="announcement-title">${escapeHtml(a.title)}</h3>
-                    <p class="announcement-content">${escapeHtml(a.content)}</p>
-                    ${userRole === 'admin' ? `
-                        <div style="margin-top:16px; display:flex; gap:8px; border-top:1px solid var(--border); padding-top:12px;">
-                            <button class="btn btn-sm btn-outline" onclick="openEditAnnouncementModal('${a.id}')">✏️ Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteAnnouncement('${a.id}')">🗑️ Delete</button>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }).join('');
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = '<p style="text-align:center; color:var(--danger); padding:20px;">Error loading announcements.</p>';
-    }
-}
-
-function openAnnouncementModal() {
-    document.getElementById('announcement-edit-id').value = '';
-    document.getElementById('announcement-title').value = '';
-    document.getElementById('announcement-category').value = 'general';
-    document.getElementById('announcement-content').value = '';
-    document.getElementById('announcement-modal-title').textContent = '📢 Add Announcement';
-    openModal('announcementModal');
-}
-
-async function openEditAnnouncementModal(id) {
-    if (userRole !== 'admin') return;
-    try {
-        const doc = await db.collection('announcements').doc(id).get();
-        if (doc.exists) {
-            const data = doc.data();
-            document.getElementById('announcement-edit-id').value = id;
-            document.getElementById('announcement-title').value = data.title;
-            document.getElementById('announcement-category').value = data.category || 'general';
-            document.getElementById('announcement-content').value = data.content;
-            document.getElementById('announcement-modal-title').textContent = '✏️ Edit Announcement';
-            openModal('announcementModal');
-        }
-    } catch (e) { showToast('Error loading announcement', 'danger'); }
-}
-
-async function saveAnnouncement() {
-    const title = document.getElementById('announcement-title')?.value.trim();
-    const category = document.getElementById('announcement-category')?.value;
-    const content = document.getElementById('announcement-content')?.value.trim();
-    const editId = document.getElementById('announcement-edit-id')?.value;
-
-    if (!title || !content) { showToast('Fill all required fields.', 'warning'); return; }
-
-    try {
-        const data = { title, category, content };
-        if (editId) {
-            await db.collection('announcements').doc(editId).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-            showToast('Announcement updated!', 'success');
-        } else {
-            await db.collection('announcements').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-            showToast('Announcement posted!', 'success');
-        }
-        closeModal('announcementModal');
-        loadAnnouncements();
-    } catch (e) { showToast('Failed: ' + e.message, 'danger'); }
-}
-
-async function deleteAnnouncement(id) {
-    if (userRole !== 'admin') return;
-    if (!confirm('Are you sure you want to delete this announcement?')) return;
-    try {
-        await db.collection('announcements').doc(id).delete();
-        showToast('Announcement deleted', 'success');
-        loadAnnouncements();
-    } catch (e) { showToast('Failed to delete', 'danger'); }
-}
-
-function initMap() {
-    const mapElement = document.getElementById('map');
-    if (!mapElement || typeof L === 'undefined') return;
-
-    if (mapInstance) mapInstance.remove();
-
-    mapInstance = L.map('map').setView([13.4253, 123.4184], 16);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(mapInstance);
-
-    L.marker([13.4253, 123.4184]).addTo(mapInstance)
-        .bindPopup('<b>Barangay San Juan Hall</b><br>Community Center')
-        .openPopup();
-}
-
-async function loadAccountPage() {
-    if (!currentUser) return;
-    try {
-        const doc = await db.collection('profiles').doc(currentUser.uid).get();
-        if (doc.exists) {
-            const data = doc.data();
-            const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
-            setVal('account-firstname', data.firstName);
-            setVal('account-lastname', data.lastName);
-            setVal('account-email', data.email || currentUser.email);
-            setVal('account-purok', data.purok);
-            setVal('account-contact', data.contactNumber);
-        }
-    } catch (e) { console.error("Account Load Error:", e); }
 }
