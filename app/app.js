@@ -1,4 +1,3 @@
-// config
 const firebaseConfig = {
     apiKey: "AIzaSyCUn_OVro6-NBfIAn0SAcGZeV25HqiCvlc",
     authDomain: "barangay-san-juan.firebaseapp.com",
@@ -9,7 +8,6 @@ const firebaseConfig = {
     measurementId: "G-5XWG6ET1CE"
 };
 
-// firebase
 try {
     firebase.initializeApp(firebaseConfig);
 } catch (e) {
@@ -20,7 +18,6 @@ try {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// constants
 let currentUser = null;
 let userRole = 'resident';
 let mapInstance = null;
@@ -40,7 +37,6 @@ const categoryConfig = {
     general: { label: '📢 General', class: 'cat-general' }
 };
 
-// authentication
 auth.onAuthStateChanged(async (user) => {
     const isLoginPage = currentPage === 'login.html';
     const authOverlay = document.getElementById('auth-overlay');
@@ -85,7 +81,7 @@ async function loadUserProfile() {
             setText('user-name', name);
             setText('user-role', userRole === 'admin' ? 'Admin' : 'Resident');
             setText('dropdown-name', name);
-            setText('dropdown-email', data.email);
+            setText('dropdown-email', data.email || currentUser.email);
             setText('user-avatar', initials);
             setText('dropdown-avatar', initials);
             setText('dropdown-role', userRole === 'admin' ? 'Admin' : 'Resident');
@@ -102,7 +98,6 @@ async function loadUserProfile() {
     }
 }
 
-// page-load
 async function initializeApp() {
     if (currentPage === 'index.html' || currentPage === '') {
         await updateStats();
@@ -118,7 +113,6 @@ async function initializeApp() {
     if (currentPage === 'account.html') await loadAccountPage();
 }
 
-// ui
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar) sidebar.classList.toggle('open');
@@ -151,7 +145,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// profile-dropdown
 window.toggleProfileDropdown = function() {
     const dropdown = document.getElementById('profileDropdown');
     const trigger = document.querySelector('.user-profile-trigger');
@@ -175,7 +168,6 @@ async function handleLogout() {
     window.location.href = 'login.html'; 
 }
 
-// dashboard-index
 async function updateStats() {
     if (!document.getElementById('stat-residents')) return;
     try {
@@ -244,7 +236,6 @@ function formatTime(timeStr) {
     return `${hour % 12 || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
 }
 
-// complaints
 async function renderComplaints(filter = 'all', elementId = 'complaintList') {
     const container = document.getElementById(elementId);
     if (!container) return;
@@ -372,7 +363,6 @@ function filterComplaints(filter, btn) {
     renderComplaints(filter);
 }
 
-// residents
 async function renderResidents() {
     const container = document.getElementById('residentGrid');
     if (!container) return;
@@ -382,7 +372,7 @@ async function renderResidents() {
         const residents = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         container.innerHTML = residents.map(r => `
             <div class="resident-card">
-                <div class="resident-avatar" style="background:${stringToColor(r.firstName+r.lastName)}">${r.firstName[0]}${r.lastName[0]}</div>
+                <div class="resident-avatar" style="background:${stringToColor((r.firstName||'')+(r.lastName||''))}">${(r.firstName?.[0]||'U')}${(r.lastName?.[0]||'')}</div>
                 <div class="resident-name">${escapeHtml(r.firstName)} ${escapeHtml(r.lastName)}</div>
                 <div class="resident-address">${escapeHtml(r.purok)}</div>
             </div>
@@ -397,7 +387,6 @@ function stringToColor(str) {
     return '#' + '00000'.substring(0, 6 - c.length) + c;
 }
 
-// summons
 async function renderSummons() {
     const container = document.getElementById('summonsList');
     if (!container) return;
@@ -495,7 +484,6 @@ function openSummonsModal() {
     openModal('summonsModal');
 }
 
-// court-scheduling
 function getLocalDateString(dateObj) {
     const y = dateObj.getFullYear();
     const m = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -674,7 +662,6 @@ async function bookCourt() {
     } catch (e) { showToast('Failed: ' + e.message, 'danger'); }
 }
 
-// announcements
 async function loadAnnouncements() {
     const container = document.getElementById('announcementsList');
     const addBtn = document.getElementById('add-announcement-btn');
@@ -701,95 +688,74 @@ async function loadAnnouncements() {
         container.innerHTML = announcements.map(a => {
             const categoryLabel = categoryConfig[a.category]?.label || '📢 General';
             const categoryClass = categoryConfig[a.category]?.class || 'cat-general';
-            const dateStr = a.createdAt ? new Date(a.createdAt.toDate()).toLocaleDateString() : 'N/A';
-            
             return `
                 <div class="announcement-card">
                     <div class="announcement-header">
-                        <div>
-                            <span class="complaint-category ${categoryClass}">${categoryLabel}</span>
-                            <div class="announcement-title">${escapeHtml(a.title)}</div>
+                        <span class="complaint-category ${categoryClass}">${categoryLabel}</span>
+                        <span class="announcement-date">🗓️ ${a.createdAt ? new Date(a.createdAt.toDate()).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <h3 class="announcement-title">${escapeHtml(a.title)}</h3>
+                    <p class="announcement-content">${escapeHtml(a.content)}</p>
+                    ${userRole === 'admin' ? `
+                        <div style="margin-top:16px; display:flex; gap:8px; border-top:1px solid var(--border); padding-top:12px;">
+                            <button class="btn btn-sm btn-outline" onclick="openEditAnnouncementModal('${a.id}')">✏️ Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAnnouncement('${a.id}')">🗑️ Delete</button>
                         </div>
-                        ${userRole === 'admin' ? `
-                            <div class="announcement-actions">
-                                <button class="btn btn-sm btn-outline" onclick="editAnnouncement('${a.id}')">✏️ Edit</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteAnnouncement('${a.id}')">🗑️ Delete</button>
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div class="announcement-content">${escapeHtml(a.content)}</div>
-                    <div class="announcement-meta">
-                        <span>📅 ${dateStr}</span>
-                        <span>👤 ${escapeHtml(a.createdBy || 'Admin')}</span>
-                    </div>
+                    ` : ''}
                 </div>
             `;
         }).join('');
-    } catch (error) { 
-        console.error(error);
-        container.innerHTML = '<p style="text-align:center; color:var(--danger); padding:20px;">Error loading announcements.</p>'; 
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p style="text-align:center; color:var(--danger); padding:20px;">Error loading announcements.</p>';
     }
 }
 
-async function saveAnnouncement() {
-    const editId = document.getElementById('announcement-edit-id')?.value;
-    const title = document.getElementById('announcement-title')?.value.trim();
-    const content = document.getElementById('announcement-content')?.value.trim();
-    const category = document.getElementById('announcement-category')?.value;
-    
-    if (!title || !content) { 
-        showToast('Please fill in Title and Content.', 'warning'); 
-        return; 
-    }
-    
-    try {
-        if (editId) {
-            await db.collection('announcements').doc(editId).update({
-                title: title,
-                content: content,
-                category: category,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            showToast('Announcement updated!', 'success');
-        } else {
-            await db.collection('announcements').add({
-                title: title,
-                content: content,
-                category: category || 'general',
-                createdBy: currentUser.email || 'Admin',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            showToast('Announcement posted!', 'success');
-        }
-        
-        closeModal('announcementModal');
-        loadAnnouncements();
-        
-        document.getElementById('announcement-edit-id').value = '';
-        document.getElementById('announcement-title').value = '';
-        document.getElementById('announcement-content').value = '';
-        
-    } catch (error) { 
-        showToast('Failed: ' + error.message, 'danger'); 
-    }
+function openAnnouncementModal() {
+    document.getElementById('announcement-edit-id').value = '';
+    document.getElementById('announcement-title').value = '';
+    document.getElementById('announcement-category').value = 'general';
+    document.getElementById('announcement-content').value = '';
+    document.getElementById('announcement-modal-title').textContent = '📢 Add Announcement';
+    openModal('announcementModal');
 }
 
-async function editAnnouncement(id) {
+async function openEditAnnouncementModal(id) {
     if (userRole !== 'admin') return;
     try {
         const doc = await db.collection('announcements').doc(id).get();
         if (doc.exists) {
             const data = doc.data();
             document.getElementById('announcement-edit-id').value = id;
-            document.getElementById('announcement-title').value = data.title || '';
-            document.getElementById('announcement-content').value = data.content || '';
+            document.getElementById('announcement-title').value = data.title;
             document.getElementById('announcement-category').value = data.category || 'general';
+            document.getElementById('announcement-content').value = data.content;
             document.getElementById('announcement-modal-title').textContent = '✏️ Edit Announcement';
             openModal('announcementModal');
         }
-    } catch (error) {
-        showToast('Error loading announcement', 'danger');
-    }
+    } catch (e) { showToast('Error loading announcement', 'danger'); }
+}
+
+async function saveAnnouncement() {
+    const title = document.getElementById('announcement-title')?.value.trim();
+    const category = document.getElementById('announcement-category')?.value;
+    const content = document.getElementById('announcement-content')?.value.trim();
+    const editId = document.getElementById('announcement-edit-id')?.value;
+
+    if (!title || !content) { showToast('Fill all required fields.', 'warning'); return; }
+
+    try {
+        const data = { title, category, content };
+        if (editId) {
+            await db.collection('announcements').doc(editId).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            showToast('Announcement updated!', 'success');
+        } else {
+            await db.collection('announcements').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            showToast('Announcement posted!', 'success');
+        }
+        closeModal('announcementModal');
+        loadAnnouncements();
+    } catch (e) { showToast('Failed: ' + e.message, 'danger'); }
 }
 
 async function deleteAnnouncement(id) {
@@ -799,26 +765,25 @@ async function deleteAnnouncement(id) {
         await db.collection('announcements').doc(id).delete();
         showToast('Announcement deleted', 'success');
         loadAnnouncements();
-    } catch (error) {
-        showToast('Failed to delete: ' + error.message, 'danger');
-    }
+    } catch (e) { showToast('Failed to delete', 'danger'); }
 }
 
-function openAnnouncementModal() {
-    document.getElementById('announcement-edit-id').value = '';
-    document.getElementById('announcement-title').value = '';
-    document.getElementById('announcement-content').value = '';
-    document.getElementById('announcement-category').value = 'general';
-    document.getElementById('announcement-modal-title').textContent = '📢 Add Announcement';
-    openModal('announcementModal');
-}
+function initMap() {
+    const mapElement = document.getElementById('map');
+    if (!mapElement || typeof L === 'undefined') return;
 
-// account
-function switchAccountTab(tabId, btn) {
-    document.querySelectorAll('.account-section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.account-nav button').forEach(b => b.classList.remove('active'));
-    document.getElementById(`tab-${tabId}`).classList.add('active');
-    btn.classList.add('active');
+    if (mapInstance) mapInstance.remove();
+
+    mapInstance = L.map('map').setView([13.4253, 123.4184], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(mapInstance);
+
+    L.marker([13.4253, 123.4184]).addTo(mapInstance)
+        .bindPopup('<b>Barangay San Juan Hall</b><br>Community Center')
+        .openPopup();
 }
 
 async function loadAccountPage() {
@@ -827,175 +792,12 @@ async function loadAccountPage() {
         const doc = await db.collection('profiles').doc(currentUser.uid).get();
         if (doc.exists) {
             const data = doc.data();
-            const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
-            setVal('acc-first-name', data.firstName);
-            setVal('acc-last-name', data.lastName);
-            setVal('acc-email', data.email);
-            setVal('acc-purok', data.purok);
-            setVal('acc-phone', data.phone);
-            const setCheck = (id, val) => { const el = document.getElementById(id); if(el) el.checked = val !== false; };
-            setCheck('acc-notif-email', data.emailNotifications);
+            const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+            setVal('account-firstname', data.firstName);
+            setVal('account-lastname', data.lastName);
+            setVal('account-email', data.email || currentUser.email);
+            setVal('account-purok', data.purok);
+            setVal('account-contact', data.contactNumber);
         }
-        await loadMyComplaints();
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Account Load Error:", e); }
 }
-
-async function saveAccountProfile() {
-    const fn = document.getElementById('acc-first-name')?.value.trim();
-    const ln = document.getElementById('acc-last-name')?.value.trim();
-    const purok = document.getElementById('acc-purok')?.value;
-    const phone = document.getElementById('acc-phone')?.value.trim();
-    if (!fn || !ln) { showToast('Name is required', 'warning'); return; }
-    try {
-        await db.collection('profiles').doc(currentUser.uid).update({ firstName: fn, lastName: ln, purok, phone });
-        await currentUser.updateProfile({ displayName: `${fn} ${ln}` });
-        showToast('Profile updated!', 'success');
-        loadUserProfile();
-    } catch (e) { showToast('Error: ' + e.message, 'danger'); }
-}
-
-async function changeAccountPassword() {
-    const curr = document.getElementById('acc-current-pass')?.value;
-    const newP = document.getElementById('acc-new-pass')?.value;
-    const conf = document.getElementById('acc-confirm-pass')?.value;
-    if (!curr || !newP || !conf) { showToast('Fill all password fields', 'warning'); return; }
-    if (newP.length < 6) { showToast('Min 6 characters', 'warning'); return; }
-    if (newP !== conf) { showToast('Passwords do not match', 'danger'); return; }
-    try {
-        const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, curr);
-        await currentUser.reauthenticateWithCredential(cred);
-        await currentUser.updatePassword(newP);
-        showToast('Password updated!', 'success');
-        ['acc-current-pass','acc-new-pass','acc-confirm-pass'].forEach(id => document.getElementById(id).value = '');
-    } catch (e) { showToast('Failed: ' + e.message, 'danger'); }
-}
-
-async function saveNotifPrefs() {
-    try {
-        await db.collection('profiles').doc(currentUser.uid).update({
-            emailNotifications: document.getElementById('acc-notif-email')?.checked
-        });
-        showToast('Preferences saved!', 'success');
-    } catch (e) { showToast('Error saving', 'danger'); }
-}
-
-async function loadMyComplaints() {
-    const container = document.getElementById('my-complaints-list');
-    if (!container) return;
-    try {
-        const snap = await db.collection('complaints').where('userId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
-        if (snap.empty) {
-            container.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:40px;">You haven\'t filed any complaints yet.</p>';
-            return;
-        }
-        container.innerHTML = snap.docs.map(doc => {
-            const c = doc.data();
-            const cls = c.status === 'resolved' ? 'resolved' : (c.status === 'progress' ? 'progress' : '');
-            return `<div class="complaint-card ${cls}"><div class="complaint-header"><h4>${escapeHtml(c.title)}</h4><span class="status-badge status-${c.status||'pending'}"><span class="status-dot"></span> ${c.status||'Pending'}</span></div><div class="complaint-desc">${escapeHtml(c.description)}</div><div class="complaint-meta"><span>📍 ${escapeHtml(c.purok)}</span><span>🕐 ${c.createdAt ? new Date(c.createdAt.toDate()).toLocaleDateString() : 'N/A'}</span></div></div>`;
-        }).join('');
-    } catch (e) { container.innerHTML = '<p>Error loading complaints.</p>'; }
-}
-
-//map
-function initMap() {
-    if (mapInstance || !document.getElementById('map')) return;
-    mapInstance = L.map('map').setView([13.4205, 123.4194], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
-    L.marker([13.4205, 123.4194]).addTo(mapInstance).bindPopup('Barangay Hall');
-}
-
-// login-signup
-window.handleLogin = async () => {
-    const e = document.getElementById('login-email')?.value;
-    const p = document.getElementById('login-password')?.value;
-    if(!e||!p) return alert('Enter credentials');
-    try { await auth.signInWithEmailAndPassword(e,p); } catch(err) { alert(err.message); }
-};
-
-window.handleSignup = async () => {
-    const email = document.getElementById('signup-email')?.value.trim();
-    const pass = document.getElementById('signup-password')?.value;
-    const fname = document.getElementById('signup-fname')?.value.trim();
-    const lname = document.getElementById('signup-lname')?.value.trim();
-    const purok = document.getElementById('signup-purok')?.value;
-    
-    if (!email || !pass || !fname || !lname || !purok) {
-        alert('Please fill in all fields.');
-        return;
-    }
-    if (pass.length < 6) {
-        alert('Password must be at least 6 characters.');
-        return;
-    }
-
-    try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
-        const user = userCredential.user;
-
-        await db.collection('profiles').doc(user.uid).set({
-            firstName: fname,
-            lastName: lname,
-            email: email,
-            purok: purok,
-            role: 'resident',
-            phone: '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        alert('Account created successfully! Please login.');
-        toggleAuthMode('login');
-        
-        document.getElementById('signup-email').value = '';
-        document.getElementById('signup-password').value = '';
-        document.getElementById('signup-fname').value = '';
-        document.getElementById('signup-lname').value = '';
-        document.getElementById('signup-purok').value = '';
-
-    } catch (error) {
-        console.error('Signup Error:', error);
-        alert('Error: ' + error.message);
-    }
-};
-
-window.toggleAuthMode = (m) => {
-    const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
-    if(loginForm) loginForm.style.display = m==='login'?'block':'none';
-    if(signupForm) signupForm.style.display = m==='signup'?'block':'none';
-};
-
-// global-exports
-window.initCalendar = initCalendar;
-window.changeMonth = changeMonth;
-window.openBookingModal = openBookingModal;
-window.bookCourt = bookCourt;
-window.openEditBookingModal = openEditBookingModal;
-window.deleteCurrentBooking = deleteCurrentBooking;
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.toggleSidebar = toggleSidebar;
-window.handleLogout = handleLogout;
-window.toggleProfileDropdown = window.toggleProfileDropdown;
-window.saveAccountProfile = saveAccountProfile;
-window.switchAccountTab = switchAccountTab;
-window.changeAccountPassword = changeAccountPassword;
-window.saveNotifPrefs = saveNotifPrefs;
-window.loadAccountPage = loadAccountPage;
-window.submitComplaint = submitComplaint;
-window.filterComplaints = filterComplaints;
-window.updateComplaintStatus = updateComplaintStatus;
-window.openEditComplaintModal = openEditComplaintModal;
-window.deleteComplaint = deleteComplaint;
-window.renderResidents = renderResidents;
-window.renderSummons = renderSummons;
-window.saveSummons = saveSummons;
-window.editSummons = openEditSummonsModal;
-window.deleteSummons = deleteSummons;
-window.openSummonsModal = openSummonsModal;
-window.loadAnnouncements = loadAnnouncements;
-window.saveAnnouncement = saveAnnouncement;
-window.editAnnouncement = editAnnouncement;
-window.deleteAnnouncement = deleteAnnouncement;
-window.openAnnouncementModal = openAnnouncementModal;
-window.loadMyComplaints = loadMyComplaints;
-window.renderComplaints = renderComplaints;
