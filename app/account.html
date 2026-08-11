@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Account - Barangay San Juan</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>My Account - juanforall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">🏛️</div>
-            <h2>Barangay San Juan</h2>
+            <h2>juanforall</h2>
             <p>Iriga City, Camarines Sur</p>
         </div>
         <nav class="sidebar-nav">
@@ -27,9 +29,7 @@
         </nav>
     </aside>
 
-    <!-- Main Content -->
     <div class="main">
-        <!-- Topbar -->
         <div class="topbar">
             <div class="topbar-left">
                 <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
@@ -69,23 +69,18 @@
             </div>
         </div>
 
-        <!-- Account Content -->
         <div class="content">
             <h1 class="page-title">My Account</h1>
             <p class="page-subtitle">Manage your profile settings and security.</p>
 
             <div class="account-layout">
-                <!-- Left Sidebar for Tabs -->
                 <div class="account-nav">
                     <button class="active" onclick="switchAccountTab('profile', this)">👤 Profile Info</button>
                     <button onclick="switchAccountTab('security', this)">🔒 Security</button>
                     <button onclick="switchAccountTab('complaints', this)">📝 My Complaints</button>
                 </div>
 
-                <!-- Right Content Area -->
                 <div class="account-content">
-                    
-                    <!-- Profile Section -->
                     <div id="tab-profile" class="account-section active">
                         <div class="section-header">
                             <h2>Profile Information</h2>
@@ -109,7 +104,6 @@
                         <button class="btn btn-primary" onclick="saveAccountProfile()">💾 Save Changes</button>
                     </div>
 
-                    <!-- Security Section -->
                     <div id="tab-security" class="account-section">
                         <div class="section-header">
                             <h2>Security & Notifications</h2>
@@ -132,7 +126,6 @@
                         </div>
                     </div>
 
-                    <!-- Complaints Section -->
                     <div id="tab-complaints" class="account-section">
                         <div class="section-header">
                             <h2>My Complaints</h2>
@@ -142,7 +135,6 @@
                             <p style="text-align:center; color:var(--text-light); padding:40px;">⏳ Loading your complaints...</p>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -150,7 +142,6 @@
 
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
