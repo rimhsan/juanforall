@@ -7,44 +7,43 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="logo">🏛️</div>
+            <div class="logo"><i class="ri-building-2-fill"></i></div>
             <h2>juanforall</h2>
             <p>Iriga City, Camarines Sur</p>
         </div>
         <nav class="sidebar-nav">
-            <a href="index.html"><span class="icon">📊</span> Dashboard</a>
-            <a href="complaints.html"><span class="icon">📝</span> Complaints & Concerns</a>
-            <a href="residents.html"><span class="icon">👥</span> Residents</a>
-            <div class="nav-section-label">Scheduling</div>
-            <a href="summons.html"><span class="icon">📋</span> Scheduled Summons</a>
-            <a href="court.html"><span class="icon">🏟️</span> Multipurpose Court</a>
+            <a href="index.html"><i class="ri-dashboard-3-line"></i> Dashboard</a>
             <div class="nav-section-label">Information</div>
-            <a href="map.html"><span class="icon">🗺️</span> Barangay Map</a>
-            <a href="announcements.html" class="active"><span class="icon">📢</span> Announcements</a>
+            <a href="announcements.html" class="active"><i class="ri-notification-3-line"></i> Announcements</a>
+            <a href="map.html"><i class="ri-map-pin-2-line"></i> Barangay Map</a>
+            <a href="residents.html"><i class="ri-group-line"></i> Residents</a>
+            <div class="nav-section-label">Community & Services</div>
+            <a href="complaints.html"><i class="ri-file-shield-2-line"></i> Complaints & Concerns</a>
+            <div class="nav-section-label">Scheduling</div>
+            <a href="summons.html"><i class="ri-file-paper-2-line"></i> Scheduled Summons</a>
+            <a href="court.html"><i class="ri-basketball-line"></i> Multipurpose Court</a>
         </nav>
     </aside>
 
     <div class="main">
         <div class="topbar">
             <div class="topbar-left">
-                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-                <div class="search-box"><input type="text" placeholder="Search..." id="globalSearch"></div>
+                <button class="menu-toggle" onclick="toggleSidebar()"><i class="ri-menu-line"></i></button>
             </div>
             <div class="topbar-right">
-                <button class="notification-btn">🔔<span class="notification-badge"></span></button>
-                
-                <div class="user-profile-trigger" onclick="toggleProfileDropdown()">
+                <div class="user-profile-trigger" onclick="toggleProfileDropdown(event)">
                     <div class="user-avatar" id="user-avatar">NO</div>
                     <div class="user-info-brief">
                         <span class="user-name" id="user-name">Loading...</span>
                         <span class="user-role" id="user-role">Resident</span>
                     </div>
-                    <span class="dropdown-arrow">▼</span>
+                    <i class="ri-arrow-down-s-line" style="color:var(--text-muted);"></i>
                 </div>
 
                 <div class="profile-dropdown" id="profileDropdown">
@@ -58,7 +57,7 @@
                     </div>
                     <div class="dropdown-body">
                         <a href="account.html" class="dropdown-link">
-                            <span class="link-icon">👤</span>
+                            <i class="ri-user-3-line" style="font-size:1.2rem; color:var(--primary);"></i>
                             <div class="link-text">
                                 <span class="link-title">My Account</span>
                                 <span class="link-desc">Profile, Security & Complaints</span>
@@ -66,7 +65,7 @@
                         </a>
                     </div>
                     <div class="dropdown-footer">
-                        <button class="logout-btn" onclick="handleLogout()">🚪 Sign Out</button>
+                        <button class="logout-btn" onclick="handleLogout()"><i class="ri-logout-box-r-line"></i> Sign Out</button>
                     </div>
                 </div>
             </div>
@@ -78,11 +77,11 @@
                     <h1 class="page-title">Announcements</h1>
                     <p class="page-subtitle">Latest news and updates from juanforall.</p>
                 </div>
-                <button class="btn btn-primary" id="add-announcement-btn" style="display:none;" onclick="openAnnouncementModal()">➕ Add Announcement</button>
+                <button class="btn btn-primary" id="add-announcement-btn" style="display:none;" onclick="openAnnouncementModal()"><i class="ri-add-line"></i> Add Announcement</button>
             </div>
             
             <div class="announcements-list" id="announcementsList">
-                <p style="text-align:center; color:#7f8c8d; padding:60px 20px;">⏳ Loading announcements...</p>
+                <p style="text-align:center; color:#7f8c8d; padding:60px 20px;">Loading announcements...</p>
             </div>
         </div>
     </div>
@@ -90,8 +89,8 @@
     <div class="modal-overlay" id="announcementModal">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="announcement-modal-title">📢 Add Announcement</h3>
-                <button class="modal-close" onclick="closeModal('announcementModal')">✕</button>
+                <h3 id="announcement-modal-title" style="display:flex; align-items:center; gap:8px;"><i class="ri-notification-badge-line" style="color:var(--primary);"></i> Add Announcement</h3>
+                <button class="modal-close" onclick="closeModal('announcementModal')"><i class="ri-close-line"></i></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="announcement-edit-id">
@@ -102,11 +101,11 @@
                 <div class="form-group">
                     <label>Category</label>
                     <select id="announcement-category">
-                        <option value="general">📢 General</option>
-                        <option value="infrastructure">🚧 Infrastructure</option>
-                        <option value="utilities">💡 Utilities</option>
-                        <option value="sanitation">🗑️ Sanitation</option>
-                        <option value="events">🎉 Events</option>
+                        <option value="general">General</option>
+                        <option value="infrastructure">Infrastructure</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="sanitation">Sanitation</option>
+                        <option value="events">Events</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -116,7 +115,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('announcementModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveAnnouncement()">Save Announcement</button>
+                <button class="btn btn-primary" onclick="saveAnnouncement()"><i class="ri-save-line"></i> Save Announcement</button>
             </div>
         </div>
     </div>
