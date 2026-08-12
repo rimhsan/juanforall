@@ -63,6 +63,117 @@ function setStorage(key, value) {
     }
 }
 
+// Persistent user accounts database across logouts
+function saveUserAccount(userObj) {
+    if (!userObj || !userObj.email) return;
+    const emailKey = userObj.email.trim().toLowerCase();
+    
+    // Save active session
+    setStorage('jfa_user', userObj);
+
+    // Save in registered users persistent database
+    let userDb = getStorage('jfa_users_db', {});
+    userDb[emailKey] = {
+        firstName: userObj.firstName || '',
+        lastName: userObj.lastName || '',
+        email: userObj.email,
+        role: userObj.role || 'Resident',
+        purok: userObj.purok || 'Purok 1',
+        phone: userObj.phone || '',
+        photo: userObj.photo || null
+    };
+    setStorage('jfa_users_db', userDb);
+
+    // Sync to residents directory
+    let residents = getStorage('jfa_residents', []);
+    const fullName = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
+    let residentIdx = residents.findIndex(r => (r.email || '').toLowerCase() === emailKey);
+    if (residentIdx !== -1) {
+        residents[residentIdx] = {
+            name: fullName || residents[residentIdx].name,
+            purok: userObj.purok || residents[residentIdx].purok,
+            role: userObj.role || residents[residentIdx].role,
+            phone: userObj.phone || residents[residentIdx].phone,
+            email: userObj.email,
+            photo: userObj.photo || residents[residentIdx].photo || null
+        };
+    } else if (fullName) {
+        residents.push({
+            name: fullName,
+            purok: userObj.purok || 'Purok 1',
+            role: userObj.role || 'Resident',
+            phone: userObj.phone || 'N/A',
+            email: userObj.email,
+            photo: userObj.photo || null
+        });
+    }
+    setStorage('jfa_residents', residents);
+
+    // Sync to Firebase Firestore if available
+    if (typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length > 0) {
+        try {
+            const db = firebase.firestore();
+            db.collection('users').doc(emailKey).set({
+                firstName: userObj.firstName || '',
+                lastName: userObj.lastName || '',
+                email: userObj.email,
+                role: userObj.role || 'Resident',
+                purok: userObj.purok || 'Purok 1',
+                phone: userObj.phone || '',
+                photo: userObj.photo || null,
+                updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(err => console.warn('Firestore set user:', err));
+        } catch (e) {}
+    }
+}
+
+function fetchUserFromStorage(email) {
+    if (!email) return null;
+    const emailKey = email.trim().toLowerCase();
+    
+    let userDb = getStorage('jfa_users_db', {});
+    if (userDb[emailKey]) {
+        return userDb[emailKey];
+    }
+
+    let residents = getStorage('jfa_residents', []);
+    const existing = residents.find(r => (r.email || '').toLowerCase() === emailKey);
+    if (existing) {
+        const parts = (existing.name || '').split(' ');
+        return {
+            firstName: parts[0] || email.split('@')[0],
+            lastName: parts.slice(1).join(' ') || '',
+            email: existing.email || email,
+            role: existing.role || 'Resident',
+            purok: existing.purok || 'Purok 1',
+            phone: existing.phone || '',
+            photo: existing.photo || null
+        };
+    }
+
+    return null;
+}
+
+function syncWithFirebaseRole() {
+    if (currentUser && currentUser.email && typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length > 0) {
+        try {
+            const db = firebase.firestore();
+            const emailKey = currentUser.email.trim().toLowerCase();
+            db.collection('users').doc(emailKey).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.role && data.role !== currentUser.role) {
+                        currentUser.role = data.role;
+                        saveUserAccount(currentUser);
+                        updateHeaderUserInfo();
+                        initAccountPage();
+                    }
+                }
+            }).catch(() => {});
+        } catch (e) {}
+    }
+}
+
 function formatStatus(status) {
     if (!status) return '';
     const s = String(status).trim().toLowerCase();
@@ -118,6 +229,9 @@ function clearLegacyDemoData() {
 clearLegacyDemoData();
 
 let currentUser = getStorage('jfa_user', DEFAULT_USER);
+if (currentUser && currentUser.email) {
+    saveUserAccount(currentUser);
+}
 let announcements = getStorage('jfa_announcements', INITIAL_ANNOUNCEMENTS);
 let complaints = getStorage('jfa_complaints', INITIAL_COMPLAINTS);
 let courtBookings = getStorage('jfa_court_bookings', INITIAL_COURT_BOOKINGS);
@@ -308,13 +422,8 @@ function initAccountPage() {
     const roleSelect = document.getElementById('acc-role');
     if (roleSelect) {
         roleSelect.value = currentUser.role || 'Resident';
-        if (!isOfficial()) {
-            roleSelect.disabled = true;
-            roleSelect.title = 'Only Barangay Officials can change account roles';
-        } else {
-            roleSelect.disabled = false;
-            roleSelect.title = '';
-        }
+        roleSelect.disabled = true;
+        roleSelect.title = 'Barangay Official role can only be changed directly in Firebase / Database';
     }
 
     if (document.getElementById('acc-purok')) document.getElementById('acc-purok').value = currentUser.purok || 'Purok 1';
@@ -327,7 +436,9 @@ function initAccountPage() {
             avatarPreview.innerHTML = `<img src="${currentUser.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
             if (removePhotoBtn) removePhotoBtn.style.display = 'inline-flex';
         } else {
-            avatarPreview.textContent = (currentUser.firstName[0] || 'J') + (currentUser.lastName[0] || 'D');
+            const firstChar = (currentUser.firstName || 'J')[0] || 'J';
+            const lastChar = (currentUser.lastName || 'D')[0] || 'D';
+            avatarPreview.textContent = firstChar + lastChar;
             if (removePhotoBtn) removePhotoBtn.style.display = 'none';
         }
     }
@@ -342,15 +453,7 @@ window.handleProfilePhotoUpload = function(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         currentUser.photo = e.target.result;
-        setStorage('jfa_user', currentUser);
-
-        // Sync to residents directory
-        let residents = getStorage('jfa_residents', []);
-        let residentIdx = residents.findIndex(r => r.email === currentUser.email);
-        if (residentIdx !== -1) {
-            residents[residentIdx].photo = currentUser.photo;
-            setStorage('jfa_residents', residents);
-        }
+        saveUserAccount(currentUser);
 
         updateHeaderUserInfo();
         initAccountPage();
@@ -361,15 +464,7 @@ window.handleProfilePhotoUpload = function(event) {
 
 window.removeProfilePhoto = function() {
     currentUser.photo = null;
-    setStorage('jfa_user', currentUser);
-
-    // Sync to residents directory
-    let residents = getStorage('jfa_residents', []);
-    let residentIdx = residents.findIndex(r => r.email === currentUser.email);
-    if (residentIdx !== -1) {
-        residents[residentIdx].photo = null;
-        setStorage('jfa_residents', residents);
-    }
+    saveUserAccount(currentUser);
 
     updateHeaderUserInfo();
     initAccountPage();
@@ -377,54 +472,30 @@ window.removeProfilePhoto = function() {
 };
 
 window.saveAccountProfile = function() {
-    const oldEmail = currentUser.email;
-    currentUser.firstName = document.getElementById('acc-first-name').value.trim() || currentUser.firstName;
-    currentUser.lastName = document.getElementById('acc-last-name').value.trim() || currentUser.lastName;
-    currentUser.email = document.getElementById('acc-email').value.trim() || currentUser.email;
-    
-    const roleSelect = document.getElementById('acc-role');
-    if (roleSelect) {
-        const requestedRole = roleSelect.value;
-        if (!isOfficial() && requestedRole !== currentUser.role) {
-            showToast('Permission Denied: Only Barangay Officials can change account roles', 'error');
-            roleSelect.value = currentUser.role;
-        } else {
-            currentUser.role = requestedRole || currentUser.role;
-        }
+    const oldEmail = (currentUser.email || '').toLowerCase();
+    const newFirstName = document.getElementById('acc-first-name').value.trim();
+    const newLastName = document.getElementById('acc-last-name').value.trim();
+    const newEmail = document.getElementById('acc-email').value.trim();
+    const newPurok = document.getElementById('acc-purok').value;
+    const newPhone = document.getElementById('acc-phone').value.trim();
+
+    if (newFirstName) currentUser.firstName = newFirstName;
+    if (newLastName) currentUser.lastName = newLastName;
+    if (newEmail) currentUser.email = newEmail;
+    if (newPurok) currentUser.purok = newPurok;
+    if (newPhone) currentUser.phone = newPhone;
+
+    if (oldEmail && oldEmail !== newEmail.toLowerCase()) {
+        let userDb = getStorage('jfa_users_db', {});
+        delete userDb[oldEmail];
+        setStorage('jfa_users_db', userDb);
     }
 
-    currentUser.purok = document.getElementById('acc-purok').value || currentUser.purok;
-    currentUser.phone = document.getElementById('acc-phone').value.trim() || currentUser.phone;
-
-    setStorage('jfa_user', currentUser);
-
-    // Sync to residents directory
-    let residents = getStorage('jfa_residents', []);
-    const fullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
-    let residentIdx = residents.findIndex(r => r.email === oldEmail || r.email === currentUser.email);
-    if (residentIdx !== -1) {
-        residents[residentIdx] = {
-            name: fullName,
-            purok: currentUser.purok,
-            role: currentUser.role || 'Resident',
-            phone: currentUser.phone || 'N/A',
-            email: currentUser.email,
-            photo: currentUser.photo || null
-        };
-    } else {
-        residents.push({
-            name: fullName,
-            purok: currentUser.purok,
-            role: currentUser.role || 'Resident',
-            phone: currentUser.phone || 'N/A',
-            email: currentUser.email,
-            photo: currentUser.photo || null
-        });
-    }
-    setStorage('jfa_residents', residents);
+    // Role cannot be changed via UI dropdown - role changes only directly in Firebase / Database
+    saveUserAccount(currentUser);
 
     updateHeaderUserInfo();
-    showToast('Account details saved successfully!', 'success');
+    showToast('Account details saved successfully! Profile will persist across logouts.', 'success');
 };
 
 window.changeAccountPassword = function() {
@@ -1122,19 +1193,9 @@ function initAuthForms() {
             const password = document.getElementById('password').value;
 
             if (email && password) {
-                let residents = getStorage('jfa_residents', []);
-                const existing = residents.find(r => r.email === email);
-                if (existing) {
-                    const parts = (existing.name || '').split(' ');
-                    currentUser = {
-                        firstName: parts[0] || email.split('@')[0],
-                        lastName: parts.slice(1).join(' ') || '',
-                        email: email,
-                        role: existing.role || 'Resident',
-                        purok: existing.purok || 'Purok 1',
-                        phone: existing.phone || '',
-                        photo: null
-                    };
+                const fetched = fetchUserFromStorage(email);
+                if (fetched) {
+                    currentUser = fetched;
                 } else {
                     currentUser = {
                         firstName: email.split('@')[0],
@@ -1145,16 +1206,8 @@ function initAuthForms() {
                         phone: '',
                         photo: null
                     };
-                    residents.push({
-                        name: `${currentUser.firstName} ${currentUser.lastName}`.trim(),
-                        purok: currentUser.purok,
-                        role: currentUser.role,
-                        phone: 'N/A',
-                        email: currentUser.email
-                    });
-                    setStorage('jfa_residents', residents);
                 }
-                setStorage('jfa_user', currentUser);
+                saveUserAccount(currentUser);
                 showToast('Login successful! Redirecting...', 'success');
                 setTimeout(() => {
                     window.location.href = 'index.html';
@@ -1188,19 +1241,7 @@ function initAuthForms() {
                 phone: '',
                 photo: null
             };
-            setStorage('jfa_user', currentUser);
-
-            let residents = getStorage('jfa_residents', []);
-            if (!residents.some(r => r.email === email)) {
-                residents.push({
-                    name: `${firstName} ${lastName}`,
-                    purok,
-                    role: 'Resident',
-                    phone: 'N/A',
-                    email
-                });
-                setStorage('jfa_residents', residents);
-            }
+            saveUserAccount(currentUser);
 
             showToast('Account created successfully! Redirecting...', 'success');
             setTimeout(() => {
@@ -1223,4 +1264,5 @@ document.addEventListener('DOMContentLoaded', function() {
     initMap();
     initAuthForms();
     updateDashboardStats();
+    syncWithFirebaseRole();
 });
