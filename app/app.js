@@ -42,9 +42,8 @@ function isBookingOwner(booking, user = currentUser) {
     const bookerEmail = (booking.bookerEmail || '').trim().toLowerCase();
     const userEmail = (user.email || '').trim().toLowerCase();
 
-    return (bookerName && bookerName === currentFullName) ||
-           (userEmail && bookerEmail && userEmail === bookerEmail) ||
-           (bookerName && bookerName.includes(currentFullName));
+    return (userEmail && bookerEmail && userEmail === bookerEmail) ||
+           (bookerName && currentFullName && (bookerName === currentFullName || bookerName.includes(currentFullName) || currentFullName.includes(bookerName)));
 }
 
 function getStorage(key, fallback) {
@@ -285,7 +284,7 @@ function updateHeaderUserInfo() {
     if (adminBadge) adminBadge.style.display = isAdmin ? 'inline-block' : 'none';
 
     const adminCourtSidebar = document.getElementById('admin-court-sidebar');
-    if (adminCourtSidebar) adminCourtSidebar.style.display = isAdmin ? 'block' : 'none';
+    if (adminCourtSidebar) adminCourtSidebar.style.display = 'block';
 }
 
 // 3. Account Page
@@ -344,6 +343,15 @@ window.handleProfilePhotoUpload = function(event) {
     reader.onload = function(e) {
         currentUser.photo = e.target.result;
         setStorage('jfa_user', currentUser);
+
+        // Sync to residents directory
+        let residents = getStorage('jfa_residents', []);
+        let residentIdx = residents.findIndex(r => r.email === currentUser.email);
+        if (residentIdx !== -1) {
+            residents[residentIdx].photo = currentUser.photo;
+            setStorage('jfa_residents', residents);
+        }
+
         updateHeaderUserInfo();
         initAccountPage();
         showToast('Profile photo updated successfully', 'success');
@@ -354,6 +362,15 @@ window.handleProfilePhotoUpload = function(event) {
 window.removeProfilePhoto = function() {
     currentUser.photo = null;
     setStorage('jfa_user', currentUser);
+
+    // Sync to residents directory
+    let residents = getStorage('jfa_residents', []);
+    let residentIdx = residents.findIndex(r => r.email === currentUser.email);
+    if (residentIdx !== -1) {
+        residents[residentIdx].photo = null;
+        setStorage('jfa_residents', residents);
+    }
+
     updateHeaderUserInfo();
     initAccountPage();
     showToast('Profile photo removed', 'info');
@@ -391,7 +408,8 @@ window.saveAccountProfile = function() {
             purok: currentUser.purok,
             role: currentUser.role || 'Resident',
             phone: currentUser.phone || 'N/A',
-            email: currentUser.email
+            email: currentUser.email,
+            photo: currentUser.photo || null
         };
     } else {
         residents.push({
@@ -399,7 +417,8 @@ window.saveAccountProfile = function() {
             purok: currentUser.purok,
             role: currentUser.role || 'Resident',
             phone: currentUser.phone || 'N/A',
-            email: currentUser.email
+            email: currentUser.email,
+            photo: currentUser.photo || null
         });
     }
     setStorage('jfa_residents', residents);
@@ -758,12 +777,14 @@ window.initCalendar = function(isAdmin = false) {
         dayCell.innerHTML = `
             <div class="day-number">${day}</div>
             <div class="day-bookings">
-                ${dayBookings.map(b => `
-                    <div class="booking-pill" title="${b.booker} (${formatTime12Hour(b.startTime)} - ${formatTime12Hour(b.endTime)})">
+                ${dayBookings.map(b => {
+                    const isVerified = b.status === 'Verified';
+                    return `
+                    <div class="booking-pill" style="${isVerified ? 'background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;' : 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;'}" title="${b.booker} (${formatTime12Hour(b.startTime)} - ${formatTime12Hour(b.endTime)}) [${b.status || 'Pending Verification'}]">
                         <span class="booking-time">${formatTime12Hour(b.startTime)}</span>
-                        <span class="booking-activity">${b.activity}</span>
+                        <span class="booking-activity">${b.activity} ${isVerified ? '✓' : '⌛'}</span>
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
         `;
 
