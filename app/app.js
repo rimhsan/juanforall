@@ -360,6 +360,7 @@ window.removeProfilePhoto = function() {
 };
 
 window.saveAccountProfile = function() {
+    const oldEmail = currentUser.email;
     currentUser.firstName = document.getElementById('acc-first-name').value.trim() || currentUser.firstName;
     currentUser.lastName = document.getElementById('acc-last-name').value.trim() || currentUser.lastName;
     currentUser.email = document.getElementById('acc-email').value.trim() || currentUser.email;
@@ -379,6 +380,30 @@ window.saveAccountProfile = function() {
     currentUser.phone = document.getElementById('acc-phone').value.trim() || currentUser.phone;
 
     setStorage('jfa_user', currentUser);
+
+    // Sync to residents directory
+    let residents = getStorage('jfa_residents', []);
+    const fullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
+    let residentIdx = residents.findIndex(r => r.email === oldEmail || r.email === currentUser.email);
+    if (residentIdx !== -1) {
+        residents[residentIdx] = {
+            name: fullName,
+            purok: currentUser.purok,
+            role: currentUser.role || 'Resident',
+            phone: currentUser.phone || 'N/A',
+            email: currentUser.email
+        };
+    } else {
+        residents.push({
+            name: fullName,
+            purok: currentUser.purok,
+            role: currentUser.role || 'Resident',
+            phone: currentUser.phone || 'N/A',
+            email: currentUser.email
+        });
+    }
+    setStorage('jfa_residents', residents);
+
     updateHeaderUserInfo();
     showToast('Account details saved successfully!', 'success');
 };
@@ -694,6 +719,8 @@ window.changeMonth = function(delta) {
 };
 
 window.initCalendar = function(isAdmin = false) {
+    renderRecentBookings();
+
     const monthEl = document.getElementById('current-month');
     const gridEl = document.getElementById('calendar-grid');
     if (!gridEl) return;
@@ -948,6 +975,28 @@ function renderResidents() {
     if (!grid) return;
 
     let residents = getStorage('jfa_residents', []);
+
+    // Sync current logged in user into residents list
+    if (currentUser && currentUser.email) {
+        const fullName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim();
+        let residentIdx = residents.findIndex(r => r.email === currentUser.email);
+        if (residentIdx !== -1) {
+            residents[residentIdx].name = fullName || residents[residentIdx].name;
+            residents[residentIdx].purok = currentUser.purok || residents[residentIdx].purok;
+            residents[residentIdx].role = currentUser.role || residents[residentIdx].role;
+            residents[residentIdx].phone = currentUser.phone || residents[residentIdx].phone;
+        } else if (fullName) {
+            residents.push({
+                name: fullName,
+                purok: currentUser.purok || 'Purok 1',
+                role: currentUser.role || 'Resident',
+                phone: currentUser.phone || 'N/A',
+                email: currentUser.email
+            });
+        }
+        setStorage('jfa_residents', residents);
+    }
+
     if (residents.length === 0) {
         grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:60px 20px; grid-column:1/-1;">No residents registered yet.</p>`;
         return;
@@ -1006,15 +1055,38 @@ function initAuthForms() {
             const password = document.getElementById('password').value;
 
             if (email && password) {
-                currentUser = {
-                    firstName: email.split('@')[0],
-                    lastName: 'User',
-                    email: email,
-                    role: 'Resident',
-                    purok: 'Purok 1',
-                    phone: '',
-                    photo: null
-                };
+                let residents = getStorage('jfa_residents', []);
+                const existing = residents.find(r => r.email === email);
+                if (existing) {
+                    const parts = (existing.name || '').split(' ');
+                    currentUser = {
+                        firstName: parts[0] || email.split('@')[0],
+                        lastName: parts.slice(1).join(' ') || '',
+                        email: email,
+                        role: existing.role || 'Resident',
+                        purok: existing.purok || 'Purok 1',
+                        phone: existing.phone || '',
+                        photo: null
+                    };
+                } else {
+                    currentUser = {
+                        firstName: email.split('@')[0],
+                        lastName: 'User',
+                        email: email,
+                        role: 'Resident',
+                        purok: 'Purok 1',
+                        phone: '',
+                        photo: null
+                    };
+                    residents.push({
+                        name: `${currentUser.firstName} ${currentUser.lastName}`.trim(),
+                        purok: currentUser.purok,
+                        role: currentUser.role,
+                        phone: 'N/A',
+                        email: currentUser.email
+                    });
+                    setStorage('jfa_residents', residents);
+                }
                 setStorage('jfa_user', currentUser);
                 showToast('Login successful! Redirecting...', 'success');
                 setTimeout(() => {
@@ -1078,6 +1150,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderAnnouncements();
     renderComplaints();
     initCalendar(true);
+    renderRecentBookings();
     renderSummons();
     renderResidents();
     initMap();
