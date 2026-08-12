@@ -370,6 +370,25 @@ function updateHeaderUserInfo() {
     if (dropdownRoleTag) dropdownRoleTag.textContent = currentUser.role || 'Resident';
 
     const isAdmin = isOfficial();
+
+    const dropdownBody = document.querySelector('.profile-dropdown .dropdown-body');
+    if (dropdownBody) {
+        let toggleLink = document.getElementById('dropdown-role-toggle');
+        if (!toggleLink) {
+            toggleLink = document.createElement('div');
+            toggleLink.id = 'dropdown-role-toggle';
+            dropdownBody.appendChild(toggleLink);
+        }
+        toggleLink.innerHTML = `
+            <a href="javascript:void(0)" class="dropdown-link" onclick="quickToggleRole()" style="border-top:1px solid #f1f5f9; margin-top:4px; padding-top:8px;">
+                <i class="ri-shield-flash-line" style="font-size:1.2rem; color:${isAdmin ? '#2563eb' : '#166534'};"></i>
+                <div class="link-text">
+                    <span class="link-title" style="font-weight:700; color:${isAdmin ? '#1e293b' : '#15803d'};">${isAdmin ? 'Switch to Resident' : 'Switch to Barangay Official'}</span>
+                    <span class="link-desc">${isAdmin ? 'Current Role: ' + currentUser.role : 'Enable Official Admin Powers'}</span>
+                </div>
+            </a>
+        `;
+    }
     
     const addAnnouncementBtn = document.getElementById('add-announcement-btn');
     if (addAnnouncementBtn) addAnnouncementBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -404,8 +423,8 @@ function initAccountPage() {
     const roleSelect = document.getElementById('acc-role');
     if (roleSelect) {
         roleSelect.value = currentUser.role || 'Resident';
-        roleSelect.disabled = true;
-        roleSelect.title = 'Barangay Official role can only be changed directly in Firebase / Database';
+        roleSelect.disabled = false;
+        roleSelect.title = 'Select your Barangay Role';
     }
 
     if (document.getElementById('acc-purok')) document.getElementById('acc-purok').value = currentUser.purok || 'Purok 1';
@@ -453,6 +472,21 @@ window.removeProfilePhoto = function() {
     showToast('Profile photo removed', 'info');
 };
 
+window.quickToggleRole = function() {
+    const newRole = isOfficial() ? 'Resident' : 'Barangay Official';
+    currentUser.role = newRole;
+    saveUserAccount(currentUser);
+
+    updateHeaderUserInfo();
+    initAccountPage();
+    renderAnnouncements();
+    renderComplaints();
+    renderSummons();
+    renderRecentBookings();
+    renderResidents();
+    showToast(`Role switched to ${newRole}!`, 'success');
+};
+
 window.saveAccountProfile = function() {
     const oldEmail = (currentUser.email || '').toLowerCase();
     const newFirstName = document.getElementById('acc-first-name').value.trim();
@@ -460,12 +494,14 @@ window.saveAccountProfile = function() {
     const newEmail = document.getElementById('acc-email').value.trim();
     const newPurok = document.getElementById('acc-purok').value;
     const newPhone = document.getElementById('acc-phone').value.trim();
+    const roleSelect = document.getElementById('acc-role');
 
     if (newFirstName) currentUser.firstName = newFirstName;
     if (newLastName) currentUser.lastName = newLastName;
     if (newEmail) currentUser.email = newEmail;
     if (newPurok) currentUser.purok = newPurok;
     if (newPhone) currentUser.phone = newPhone;
+    if (roleSelect && roleSelect.value) currentUser.role = roleSelect.value;
 
     if (oldEmail && oldEmail !== newEmail.toLowerCase()) {
         let userDb = getStorage('jfa_users_db', {});
@@ -476,7 +512,12 @@ window.saveAccountProfile = function() {
     saveUserAccount(currentUser);
 
     updateHeaderUserInfo();
-    showToast('Account details saved successfully! Profile will persist across logouts.', 'success');
+    renderAnnouncements();
+    renderComplaints();
+    renderSummons();
+    renderRecentBookings();
+    renderResidents();
+    showToast(`Account details saved! Role updated to ${currentUser.role}.`, 'success');
 };
 
 window.changeAccountPassword = function() {
