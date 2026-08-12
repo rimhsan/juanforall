@@ -1,23 +1,3 @@
-/* juanforall Barangay Portal Application Script */
-
-// --- Default Initial Data ---
-const DEFAULT_USER = {
-    firstName: 'Barangay',
-    lastName: 'Official',
-    email: 'official@juanforall.gov.ph',
-    role: 'Barangay Official',
-    purok: 'Purok 1',
-    phone: '',
-    photo: null
-};
-
-const INITIAL_ANNOUNCEMENTS = [];
-const INITIAL_COMPLAINTS = [];
-const INITIAL_COURT_BOOKINGS = [];
-const INITIAL_SUMMONS = [];
-const INITIAL_RESIDENTS = [];
-
-// --- Helper Functions & Role Enforcement ---
 function isOfficial(user = currentUser) {
     if (!user || !user.role) return false;
     const officialRoles = ['Barangay Official', 'Barangay Captain', 'Kagawad', 'SK Chairman', 'Barangay Tanod', 'Staff', 'Admin'];
