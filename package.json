@@ -1,0 +1,14 @@
+{
+  "name": "juanforall",
+  "version": "1.0.0",
+  "description": "Barangay San Juan Management System - Iriga City, Camarines Sur",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo 'No build required for static server'"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
