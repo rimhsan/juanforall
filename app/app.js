@@ -1,6 +1,3 @@
-/* juanforall Barangay Portal Application Script */
-
-// --- Default Initial Data ---
 const DEFAULT_USER = {
     firstName: 'Barangay',
     lastName: 'Official',
@@ -17,7 +14,6 @@ const INITIAL_COURT_BOOKINGS = [];
 const INITIAL_SUMMONS = [];
 const INITIAL_RESIDENTS = [];
 
-// --- Helper Functions & Role Enforcement ---
 function isOfficial(user = currentUser) {
     if (!user || !user.role) return false;
     const officialRoles = ['Barangay Official', 'Barangay Captain', 'Kagawad', 'SK Chairman', 'Barangay Tanod', 'Staff', 'Admin'];
@@ -63,15 +59,12 @@ function setStorage(key, value) {
     }
 }
 
-// Persistent user accounts database across logouts
 function saveUserAccount(userObj) {
     if (!userObj || !userObj.email) return;
     const emailKey = userObj.email.trim().toLowerCase();
     
-    // Save active session
     setStorage('jfa_user', userObj);
 
-    // Save in registered users persistent database
     let userDb = getStorage('jfa_users_db', {});
     userDb[emailKey] = {
         firstName: userObj.firstName || '',
@@ -84,7 +77,6 @@ function saveUserAccount(userObj) {
     };
     setStorage('jfa_users_db', userDb);
 
-    // Sync to residents directory
     let residents = getStorage('jfa_residents', []);
     const fullName = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
     let residentIdx = residents.findIndex(r => (r.email || '').toLowerCase() === emailKey);
@@ -109,7 +101,6 @@ function saveUserAccount(userObj) {
     }
     setStorage('jfa_residents', residents);
 
-    // Sync to Firebase Firestore if available
     if (typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length > 0) {
         try {
             const db = firebase.firestore();
@@ -197,7 +188,6 @@ function formatTime12Hour(timeStr) {
     return `${hours}:${minutes} ${ampm}`;
 }
 
-// --- App State & Legacy Data Clean Cleanup ---
 function clearLegacyDemoData() {
     const legacyDemoIds = ['ann-1', 'ann-2', 'ann-3', 'cmp-1', 'cmp-2', 'cmp-3', 'bk-1', 'bk-2', 'sum-1', 'sum-2'];
     
@@ -240,7 +230,6 @@ let currentCalendarMonth = new Date();
 let currentComplaintFilter = 'all';
 let complaintToDeleteId = null;
 
-// --- Update Dashboard Stats ---
 function updateDashboardStats() {
     const statResidents = document.getElementById('stat-residents');
     const statComplaints = document.getElementById('stat-complaints');
@@ -264,9 +253,6 @@ function updateDashboardStats() {
     }
 }
 
-// --- Window Exported Functions ---
-
-// 1. Navigation & Dropdowns
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar) {
@@ -285,7 +271,6 @@ window.toggleProfileDropdown = function(event) {
     }
 };
 
-// Close profile dropdown when clicking outside
 document.addEventListener('click', function(e) {
     const dropdown = document.getElementById('profileDropdown');
     const trigger = document.querySelector('.user-profile-trigger');
@@ -351,7 +336,6 @@ window.showToast = function(message, type = 'info') {
     }, 3500);
 };
 
-// 2. User & Profile UI Binding
 function updateHeaderUserInfo() {
     if (!currentUser) return;
     const initials = (currentUser.firstName[0] || 'J') + (currentUser.lastName[0] || 'D');
@@ -385,7 +369,6 @@ function updateHeaderUserInfo() {
     if (dropdownEmail) dropdownEmail.textContent = currentUser.email || '';
     if (dropdownRoleTag) dropdownRoleTag.textContent = currentUser.role || 'Resident';
 
-    // Show admin options if official or staff
     const isAdmin = isOfficial();
     
     const addAnnouncementBtn = document.getElementById('add-announcement-btn');
@@ -401,7 +384,6 @@ function updateHeaderUserInfo() {
     if (adminCourtSidebar) adminCourtSidebar.style.display = 'block';
 }
 
-// 3. Account Page
 window.switchAccountTab = function(tabName, el) {
     document.querySelectorAll('.account-nav button').forEach(btn => btn.classList.remove('active'));
     if (el) el.classList.add('active');
@@ -413,7 +395,7 @@ window.switchAccountTab = function(tabName, el) {
 
 function initAccountPage() {
     const firstNameInput = document.getElementById('acc-first-name');
-    if (!firstNameInput) return; // Not on account page
+    if (!firstNameInput) return;
 
     firstNameInput.value = currentUser.firstName || '';
     document.getElementById('acc-last-name').value = currentUser.lastName || '';
@@ -491,7 +473,6 @@ window.saveAccountProfile = function() {
         setStorage('jfa_users_db', userDb);
     }
 
-    // Role cannot be changed via UI dropdown - role changes only directly in Firebase / Database
     saveUserAccount(currentUser);
 
     updateHeaderUserInfo();
@@ -577,7 +558,6 @@ function renderMyComplaints() {
     `).join('');
 }
 
-// 4. Announcements
 function renderAnnouncements() {
     const list = document.getElementById('announcementsList');
     const recent = document.getElementById('recent-announcements');
@@ -684,7 +664,6 @@ window.deleteAnnouncement = function(id) {
     }
 };
 
-// 5. Complaints
 function renderComplaints() {
     updateDashboardStats();
     const list = document.getElementById('complaintList');
@@ -802,7 +781,6 @@ window.updateComplaintStatus = function(id, newStatus) {
     }
 };
 
-// 6. Court Booking
 window.changeMonth = function(delta) {
     currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + delta);
     initCalendar(true);
@@ -821,7 +799,6 @@ window.initCalendar = function(isAdmin = false) {
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     if (monthEl) monthEl.textContent = `${monthNames[month]} ${year}`;
 
-    // Clear grid after 7 day headers
     const dayHeaders = Array.from(gridEl.children).slice(0, 7);
     gridEl.innerHTML = '';
     dayHeaders.forEach(h => gridEl.appendChild(h));
@@ -829,7 +806,6 @@ window.initCalendar = function(isAdmin = false) {
     const firstDayIndex = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
 
-    // Blank cells before month start
     for (let i = 0; i < firstDayIndex; i++) {
         const blank = document.createElement('div');
         blank.className = 'calendar-day empty';
@@ -1007,7 +983,6 @@ window.deleteCurrentBooking = function(id) {
     }
 };
 
-// 7. Summons
 function renderSummons() {
     updateDashboardStats();
     const list = document.getElementById('summonsList');
@@ -1102,7 +1077,6 @@ window.deleteSummons = function(id) {
     }
 };
 
-// 8. Residents Page
 function renderResidents() {
     updateDashboardStats();
     const grid = document.getElementById('residentGrid');
@@ -1110,7 +1084,6 @@ function renderResidents() {
 
     let residents = getStorage('jfa_residents', []);
 
-    // Sync current logged in user into residents list
     if (currentUser && currentUser.email) {
         const fullName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim();
         let residentIdx = residents.findIndex(r => r.email === currentUser.email);
@@ -1154,12 +1127,10 @@ function renderResidents() {
     `).join('');
 }
 
-// 9. Map initialization
 function initMap() {
     const mapEl = document.getElementById('map');
     if (!mapEl || typeof L === 'undefined') return;
 
-    // Iriga City center coordinates
     const lat = 13.4333;
     const lng = 123.4167;
 
@@ -1183,7 +1154,6 @@ function initMap() {
     });
 }
 
-// 10. Login & Signup Forms
 function initAuthForms() {
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
@@ -1251,7 +1221,6 @@ function initAuthForms() {
     }
 }
 
-// --- DOM Loaded Initialization ---
 document.addEventListener('DOMContentLoaded', function() {
     updateHeaderUserInfo();
     initAccountPage();
