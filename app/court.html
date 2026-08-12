@@ -7,44 +7,43 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="logo">🏛️</div>
+            <div class="logo"><i class="ri-building-2-fill"></i></div>
             <h2>juanforall</h2>
             <p>Iriga City, Camarines Sur</p>
         </div>
         <nav class="sidebar-nav">
-            <a href="index.html"><span class="icon">📊</span> Dashboard</a>
-            <a href="complaints.html"><span class="icon">📝</span> Complaints & Concerns</a>
-            <a href="residents.html"><span class="icon">👥</span> Residents</a>
-            <div class="nav-section-label">Scheduling</div>
-            <a href="summons.html"><span class="icon">📋</span> Scheduled Summons</a>
-            <a href="court.html" class="active"><span class="icon">🏟️</span> Multipurpose Court</a>
+            <a href="index.html"><i class="ri-dashboard-3-line"></i> Dashboard</a>
             <div class="nav-section-label">Information</div>
-            <a href="map.html"><span class="icon">🗺️</span> Barangay Map</a>
-            <a href="announcements.html"><span class="icon">📢</span> Announcements</a>
+            <a href="announcements.html"><i class="ri-notification-3-line"></i> Announcements</a>
+            <a href="map.html"><i class="ri-map-pin-2-line"></i> Barangay Map</a>
+            <a href="residents.html"><i class="ri-group-line"></i> Residents</a>
+            <div class="nav-section-label">Community & Services</div>
+            <a href="complaints.html"><i class="ri-file-shield-2-line"></i> Complaints & Concerns</a>
+            <div class="nav-section-label">Scheduling</div>
+            <a href="summons.html"><i class="ri-file-paper-2-line"></i> Scheduled Summons</a>
+            <a href="court.html" class="active"><i class="ri-basketball-line"></i> Multipurpose Court</a>
         </nav>
     </aside>
 
     <div class="main">
         <div class="topbar">
             <div class="topbar-left">
-                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-                <div class="search-box"><input type="text" placeholder="Search..." id="globalSearch"></div>
+                <button class="menu-toggle" onclick="toggleSidebar()"><i class="ri-menu-line"></i></button>
             </div>
             <div class="topbar-right">
-                <button class="notification-btn">🔔<span class="notification-badge"></span></button>
-                
-                <div class="user-profile-trigger" onclick="toggleProfileDropdown()">
+                <div class="user-profile-trigger" onclick="toggleProfileDropdown(event)">
                     <div class="user-avatar" id="user-avatar">NO</div>
                     <div class="user-info-brief">
                         <span class="user-name" id="user-name">Loading...</span>
                         <span class="user-role" id="user-role">Resident</span>
                     </div>
-                    <span class="dropdown-arrow">▼</span>
+                    <i class="ri-arrow-down-s-line" style="color:var(--text-muted);"></i>
                 </div>
 
                 <div class="profile-dropdown" id="profileDropdown">
@@ -58,7 +57,7 @@
                     </div>
                     <div class="dropdown-body">
                         <a href="account.html" class="dropdown-link">
-                            <span class="link-icon">👤</span>
+                            <i class="ri-user-3-line" style="font-size:1.2rem; color:var(--primary);"></i>
                             <div class="link-text">
                                 <span class="link-title">My Account</span>
                                 <span class="link-desc">Profile, Security & Complaints</span>
@@ -66,15 +65,18 @@
                         </a>
                     </div>
                     <div class="dropdown-footer">
-                        <button class="logout-btn" onclick="handleLogout()">🚪 Sign Out</button>
+                        <button class="logout-btn" onclick="handleLogout()"><i class="ri-logout-box-r-line"></i> Sign Out</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="content">
-            <div class="page-header">
-                <h1 class="page-title">Court Schedule</h1>
+            <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                <div>
+                    <h1 class="page-title">Court Schedule</h1>
+                    <p class="page-subtitle">Reserve and manage slots for the Barangay Multipurpose Covered Court.</p>
+                </div>
                 <span class="badge badge-admin" id="admin-badge" style="display:none;">Admin View</span>
             </div>
             
@@ -83,8 +85,8 @@
                     <div class="calendar-header">
                         <div class="current-month" id="current-month">Loading...</div>
                         <div class="calendar-nav">
-                            <button onclick="changeMonth(-1)">◀</button>
-                            <button onclick="changeMonth(1)">▶</button>
+                            <button onclick="changeMonth(-1)"><i class="ri-arrow-left-s-line"></i></button>
+                            <button onclick="changeMonth(1)"><i class="ri-arrow-right-s-line"></i></button>
                         </div>
                     </div>
                     
@@ -98,16 +100,16 @@
                         <div class="day-header">Sat</div>
                     </div>
                     
-                    <div class="bottom-actions">
-                        <button class="btn btn-accent" onclick="openBookingModal()">📅 Book a Slot</button>
+                    <div class="bottom-actions" style="margin-top:20px;">
+                        <button class="btn btn-primary" onclick="openBookingModal()"><i class="ri-calendar-event-line"></i> Book a Slot</button>
                     </div>
                 </div>
 
                 <div class="court-sidebar" id="admin-court-sidebar" style="display:none;">
                     <div class="card">
                         <div class="card-header">
-                            <h3>📋 Recent Bookings</h3>
-                            <button class="btn btn-sm btn-outline" onclick="initCalendar(true)">Refresh</button>
+                            <h3 style="display:flex; align-items:center; gap:8px;"><i class="ri-list-check" style="color:var(--primary);"></i> Recent Bookings</h3>
+                            <button class="btn btn-sm btn-outline" onclick="initCalendar(true)"><i class="ri-refresh-line"></i></button>
                         </div>
                         <div class="card-body" style="padding:16px;">
                             <div id="admin-recent-bookings-list">
@@ -123,8 +125,8 @@
     <div class="modal-overlay" id="courtModal">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="court-modal-title">📅 Book Court Slot</h3>
-                <button class="modal-close" onclick="closeModal('courtModal')">✕</button>
+                <h3 id="court-modal-title" style="display:flex; align-items:center; gap:8px;"><i class="ri-calendar-event-line" style="color:var(--primary);"></i> Book Court Slot</h3>
+                <button class="modal-close" onclick="closeModal('courtModal')"><i class="ri-close-line"></i></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="court-booking-edit-id">
@@ -139,17 +141,17 @@
                     <input type="date" id="court-date" readonly style="background:#f8f9fa; cursor:not-allowed;">
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
+                <div class="form-row" style="display:flex; gap:12px;">
+                    <div class="form-group" style="flex:1;">
                         <label>Start Time *</label>
                         <input type="time" id="court-start-time" min="06:00" max="19:00">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="flex:1;">
                         <label>End Time *</label>
                         <input type="time" id="court-end-time" min="06:00" max="19:00">
                     </div>
                 </div>
-                <p style="font-size:12px;color:var(--text-light);margin-top:-10px;margin-bottom:15px;">Court hours: 6:00 AM - 7:00 PM</p>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:-10px;margin-bottom:15px;">Court hours: 6:00 AM - 7:00 PM</p>
                 
                 <div class="form-group">
                     <label>Activity</label>
@@ -163,10 +165,10 @@
                 </div>
             </div>
             <div class="modal-footer" style="justify-content: space-between;">
-                <button id="btn-delete-booking" class="btn btn-danger" onclick="deleteCurrentBooking()" style="display:none;">🗑️ Delete</button>
-                <div style="display:flex; gap:10px;">
+                <button id="btn-delete-booking" class="btn btn-danger" onclick="deleteCurrentBooking()" style="display:none;"><i class="ri-delete-bin-line"></i> Delete</button>
+                <div style="display:flex; gap:10px; margin-left:auto;">
                     <button class="btn btn-outline" onclick="closeModal('courtModal')">Cancel</button>
-                    <button class="btn btn-accent" onclick="bookCourt()">✅ Confirm Booking</button>
+                    <button class="btn btn-primary" onclick="bookCourt()"><i class="ri-checkbox-circle-line"></i> Confirm Booking</button>
                 </div>
             </div>
         </div>
