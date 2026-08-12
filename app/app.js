@@ -807,15 +807,23 @@ function renderRecentBookings() {
         if (courtBookings.length === 0) {
             recentDashboard.innerHTML = `<p style="text-align:center; color:#7f8c8d; padding:20px;">No court bookings.</p>`;
         } else {
-            recentDashboard.innerHTML = courtBookings.slice(0, 3).map(b => `
+            recentDashboard.innerHTML = courtBookings.slice(0, 5).map(b => {
+                const isVerified = b.status === 'Verified';
+                return `
                 <div style="padding:10px 0; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <div style="font-weight:600; font-size:0.9rem;">${b.activity} - ${b.booker}</div>
+                        <div style="font-weight:600; font-size:0.9rem; display:flex; align-items:center; gap:6px;">
+                            ${b.activity} - ${b.booker}
+                            ${isVerified 
+                                ? `<span class="badge badge-success" style="font-size:0.7rem; padding:1px 6px;">Verified</span>` 
+                                : `<span class="badge badge-warning" style="font-size:0.7rem; padding:1px 6px;">Pending</span>`}
+                        </div>
                         <div style="font-size:0.8rem; color:var(--text-muted);"><i class="ri-time-line"></i> ${formatTime12Hour(b.startTime)} - ${formatTime12Hour(b.endTime)}</div>
                     </div>
                     <span class="badge badge-info">${b.date}</span>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
     }
 
@@ -827,15 +835,34 @@ function renderRecentBookings() {
 
         list.innerHTML = courtBookings.map(b => {
             const canCancel = isOfficial() || isBookingOwner(b);
+            const canVerify = isOfficial() && b.status !== 'Verified';
+            const isVerified = b.status === 'Verified';
+
             return `
-                <div style="padding:10px; border-bottom:1px solid var(--border-color); font-size:0.85rem;">
-                    <div style="font-weight:700; color:#0f172a;">${b.booker}</div>
-                    <div style="color:var(--text-muted); margin-top:2px;">${b.date} &bull; ${formatTime12Hour(b.startTime)} - ${formatTime12Hour(b.endTime)} (${b.activity})</div>
-                    ${canCancel ? `
-                        <button class="btn btn-sm btn-outline" onclick="deleteCurrentBooking('${b.id}')" style="margin-top:6px; color:#ef4444; border-color:#fca5a5; padding:2px 8px; font-size:0.75rem;">
-                            Cancel Booking
-                        </button>
-                    ` : ''}
+                <div style="padding:12px; border-bottom:1px solid var(--border-color); font-size:0.85rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                        <div>
+                            <div style="font-weight:700; color:#0f172a;">${b.booker}</div>
+                            <div style="color:var(--text-muted); margin-top:2px;">${b.date} &bull; ${formatTime12Hour(b.startTime)} - ${formatTime12Hour(b.endTime)} (${b.activity})</div>
+                        </div>
+                        <div>
+                            ${isVerified 
+                                ? `<span class="badge badge-success" style="font-size:0.7rem; padding:2px 6px;"><i class="ri-checkbox-circle-line"></i> Verified</span>` 
+                                : `<span class="badge badge-warning" style="font-size:0.7rem; padding:2px 6px;"><i class="ri-time-line"></i> Pending Verification</span>`}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        ${canVerify ? `
+                            <button class="btn btn-sm btn-primary" onclick="verifyCourtBooking('${b.id}')" style="padding:3px 10px; font-size:0.75rem;">
+                                <i class="ri-check-double-line"></i> Verify Booking
+                            </button>
+                        ` : ''}
+                        ${canCancel ? `
+                            <button class="btn btn-sm btn-outline" onclick="deleteCurrentBooking('${b.id}')" style="color:#ef4444; border-color:#fca5a5; padding:3px 10px; font-size:0.75rem;">
+                                <i class="ri-delete-bin-line"></i> Cancel Booking
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -868,14 +895,29 @@ window.bookCourt = function() {
         date,
         startTime,
         endTime,
-        activity
+        activity,
+        status: isOfficial() ? 'Verified' : 'Pending Verification'
     };
 
     courtBookings.push(newBooking);
     setStorage('jfa_court_bookings', courtBookings);
     closeModal('courtModal');
     initCalendar(true);
-    showToast('Court slot booked successfully!', 'success');
+    showToast(isOfficial() ? 'Court slot booked and verified!' : 'Court slot booked! Pending official verification.', 'success');
+};
+
+window.verifyCourtBooking = function(id) {
+    if (!isOfficial()) {
+        showToast('Permission Denied: Only Barangay Officials can verify court bookings', 'error');
+        return;
+    }
+    const booking = courtBookings.find(b => b.id === id);
+    if (booking) {
+        booking.status = 'Verified';
+        setStorage('jfa_court_bookings', courtBookings);
+        initCalendar(true);
+        showToast('Court booking verified successfully!', 'success');
+    }
 };
 
 window.deleteCurrentBooking = function(id) {
@@ -890,7 +932,7 @@ window.deleteCurrentBooking = function(id) {
         setStorage('jfa_court_bookings', courtBookings);
         closeModal('courtModal');
         initCalendar(true);
-        showToast('Booking cancelled', 'info');
+        showToast('Court booking cancelled', 'info');
     }
 };
 
@@ -1006,13 +1048,15 @@ function renderResidents() {
             residents[residentIdx].purok = currentUser.purok || residents[residentIdx].purok;
             residents[residentIdx].role = currentUser.role || residents[residentIdx].role;
             residents[residentIdx].phone = currentUser.phone || residents[residentIdx].phone;
+            residents[residentIdx].photo = currentUser.photo || residents[residentIdx].photo || null;
         } else if (fullName) {
             residents.push({
                 name: fullName,
                 purok: currentUser.purok || 'Purok 1',
                 role: currentUser.role || 'Resident',
                 phone: currentUser.phone || 'N/A',
-                email: currentUser.email
+                email: currentUser.email,
+                photo: currentUser.photo || null
             });
         }
         setStorage('jfa_residents', residents);
@@ -1025,8 +1069,10 @@ function renderResidents() {
 
     grid.innerHTML = residents.map(r => `
         <div class="card" style="padding:16px; display:flex; align-items:center; gap:16px;">
-            <div style="width:50px; height:50px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.2rem; flex-shrink:0;">
-                ${(r.name || 'Resident').split(' ').map(n=>n[0]).join('')}
+            <div style="width:52px; height:52px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.1rem; flex-shrink:0; overflow:hidden; border:2px solid #e2e8f0;">
+                ${r.photo 
+                    ? `<img src="${r.photo}" alt="${r.name}" style="width:100%; height:100%; object-fit:cover;">` 
+                    : (r.name || 'Resident').split(' ').map(n=>n[0]).join('')}
             </div>
             <div>
                 <h4 style="font-size:0.98rem; font-weight:700; margin-bottom:2px;">${r.name}</h4>
