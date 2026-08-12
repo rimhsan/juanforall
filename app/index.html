@@ -3,152 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - juanforall</title>
+    <title>Login - juanforall</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@200..700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
-<body>
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo"><i class="ri-building-2-fill"></i></div>
-            <h2>juanforall</h2>
+<body class="login-page">
+
+    <div class="login-card">
+        <div class="login-header">
+            <div style="font-size: 2.2rem; color: var(--primary); margin-bottom: 8px;"><i class="ri-building-2-fill"></i></div>
+            <h1>juanforall</h1>
             <p>Iriga City, Camarines Sur</p>
         </div>
-        <nav class="sidebar-nav">
-            <a href="index.html" class="active"><i class="ri-dashboard-3-line"></i> Dashboard</a>
-            <div class="nav-section-label">Information</div>
-            <a href="announcements.html"><i class="ri-notification-3-line"></i> Announcements</a>
-            <a href="map.html"><i class="ri-map-pin-2-line"></i> Barangay Map</a>
-            <a href="residents.html"><i class="ri-group-line"></i> Residents</a>
-            <div class="nav-section-label">Community & Services</div>
-            <a href="complaints.html"><i class="ri-file-shield-2-line"></i> Complaints & Concerns</a>
-            <div class="nav-section-label">Scheduling</div>
-            <a href="summons.html"><i class="ri-file-paper-2-line"></i> Scheduled Summons</a>
-            <a href="court.html"><i class="ri-basketball-line"></i> Multipurpose Court</a>
-        </nav>
-    </aside>
 
-    <div class="main">
-        <div class="topbar">
-            <div class="topbar-left">
-                <button class="menu-toggle" onclick="toggleSidebar()"><i class="ri-menu-line"></i></button>
-            </div>
-            <div class="topbar-right">
-                <div class="user-profile-trigger" onclick="toggleProfileDropdown(event)">
-                    <div class="user-avatar" id="user-avatar">NO</div>
-                    <div class="user-info-brief">
-                        <span class="user-name" id="user-name">Loading...</span>
-                        <span class="user-role" id="user-role">Resident</span>
-                    </div>
-                    <i class="ri-arrow-down-s-line" style="color:var(--text-muted);"></i>
-                </div>
-
-                <div class="profile-dropdown" id="profileDropdown">
-                    <div class="dropdown-header">
-                        <div class="dropdown-avatar" id="dropdown-avatar">NO</div>
-                        <div class="dropdown-details">
-                            <div class="dropdown-name" id="dropdown-name">User Name</div>
-                            <div class="dropdown-email" id="dropdown-email">email</div>
-                            <span class="dropdown-role-tag" id="dropdown-role-tag">Resident</span>
-                        </div>
-                    </div>
-                    <div class="dropdown-body">
-                        <a href="account.html" class="dropdown-link">
-                            <i class="ri-user-3-line" style="font-size:1.2rem; color:var(--primary);"></i>
-                            <div class="link-text">
-                                <span class="link-title">My Account</span>
-                                <span class="link-desc">Profile, Security & Complaints</span>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="dropdown-footer">
-                        <button class="logout-btn" onclick="handleLogout()"><i class="ri-logout-box-r-line"></i> Sign Out</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="content">
-            <h1 class="page-title">Dashboard</h1>
-            <p class="page-subtitle">Welcome back! Here's what's happening in juanforall.</p>
+        <form class="login-form" id="login-form">
+            <h2 style="font-size: 1.25rem; margin-bottom: 16px;">Welcome Back</h2>
             
-            <div class="card" style="margin-bottom: 24px;">
-                <div class="card-header">
-                    <h3 style="display:flex; align-items:center; gap:8px;"><i class="ri-notification-3-line" style="color:var(--primary);"></i> Barangay Announcements</h3>
-                </div>
-                <div class="card-body">
-                    <div id="recent-announcements"><p style="text-align:center; color:#7f8c8d; padding:20px;">Loading announcements...</p></div>
-                </div>
+            <div class="form-group">
+                <label for="email"><i class="ri-mail-line"></i> Email Address</label>
+                <input type="email" id="email" placeholder="you@example.com" required>
             </div>
 
-            <div class="grid-2" style="margin-bottom: 24px;">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 style="display:flex; align-items:center; gap:8px;"><i class="ri-error-warning-line" style="color:var(--primary);"></i> Recent Complaints</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="complaint-list" id="recent-complaints"><p style="text-align:center; color:#7f8c8d; padding:20px;">Loading...</p></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h3 style="display:flex; align-items:center; gap:8px;"><i class="ri-basketball-line" style="color:var(--primary);"></i> Recent Court Bookings</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="court-booking-list" id="recent-court-bookings"><p style="text-align:center; color:#7f8c8d; padding:20px;">Loading...</p></div>
-                    </div>
-                </div>
+            <div class="form-group">
+                <label for="password"><i class="ri-lock-line"></i> Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
             </div>
 
-            <div class="quick-actions" style="margin-bottom: 24px;">
-                <div class="quick-action" onclick="window.location.href='complaints.html'">
-                    <div class="qa-icon" style="color:var(--primary);"><i class="ri-file-add-line"></i></div>
-                    <div class="qa-label">File Complaint</div>
-                </div>
-                <div class="quick-action" onclick="window.location.href='court.html'">
-                    <div class="qa-icon" style="color:var(--primary);"><i class="ri-calendar-event-line"></i></div>
-                    <div class="qa-label">Book Court</div>
-                </div>
-                <div class="quick-action" onclick="window.location.href='map.html'">
-                    <div class="qa-icon" style="color:var(--primary);"><i class="ri-map-2-line"></i></div>
-                    <div class="qa-label">View Map</div>
-                </div>
-            </div>
+            <button type="submit" class="btn btn-primary" style="display:flex; align-items:center; justify-content:center; gap:8px;"><i class="ri-login-box-line"></i> Login</button>
+        </form>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon" style="background:#dbeafe; color:#1d4ed8;"><i class="ri-group-line"></i></div>
-                    <div class="stat-value" id="stat-residents">-</div>
-                    <div class="stat-label">Total Residents</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background:#fef3c7; color:#d97706;"><i class="ri-file-warning-line"></i></div>
-                    <div class="stat-value" id="stat-complaints">-</div>
-                    <div class="stat-label">Active Complaints</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background:#dcfce7; color:#15803d;"><i class="ri-file-list-3-line"></i></div>
-                    <div class="stat-value" id="stat-summons">-</div>
-                    <div class="stat-label">Pending Summons</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background:#eff6ff; color:#2563eb;"><i class="ri-basketball-line"></i></div>
-                    <div class="stat-value" id="stat-court">-</div>
-                    <div class="stat-label">Court Bookings</div>
-                </div>
-            </div>
+        <div class="login-footer">
+            Don't have an account? <a href="signup.html">Sign up</a>
         </div>
     </div>
 
-    <div class="toast-container" id="toast-container"></div>
+    <div id="toast-container" class="toast-container"></div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
