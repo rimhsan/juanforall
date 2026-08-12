@@ -111,16 +111,16 @@
                         <div class="form-row" style="display:flex; gap:12px; margin-bottom:12px;">
                             <div class="form-group" style="flex:1;"><label>Email Address</label><input type="email" id="acc-email" placeholder="name@domain.com"></div>
                             <div class="form-group" style="flex:1;"><label>Barangay Role</label>
-                                <select id="acc-role" disabled style="background:#f1f5f9; cursor:not-allowed;">
-                                    <option value="Resident">Resident</option>
+                                <select id="acc-role">
                                     <option value="Barangay Official">Barangay Official</option>
-                                    <option value="Barangay Tanod">Barangay Tanod</option>
+                                    <option value="Resident">Resident</option>
+                                    <option value="Barangay Captain">Barangay Captain</option>
                                     <option value="Kagawad">Kagawad</option>
                                     <option value="SK Chairman">SK Chairman</option>
-                                    <option value="Barangay Captain">Barangay Captain</option>
+                                    <option value="Barangay Tanod">Barangay Tanod</option>
                                     <option value="Staff">Staff</option>
                                 </select>
-                                <small style="color:var(--text-muted); font-size:0.75rem; display:block; margin-top:4px;"><i class="ri-information-line"></i> Barangay Official role can only be changed directly in Firebase / Database.</small>
+                                <small style="color:var(--text-muted); font-size:0.75rem; display:block; margin-top:4px;"><i class="ri-shield-user-line"></i> Select 'Barangay Official' to enable official admin powers across the portal.</small>
                             </div>
                         </div>
 
