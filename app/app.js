@@ -30,9 +30,8 @@ const INITIAL_SUMMONS = [];
 const INITIAL_RESIDENTS = [];
 
 function isOfficial(user = currentUser) {
-    if (!user || !user.role) return false;
-    const officialRoles = ['Barangay Official', 'Barangay Captain', 'Kagawad', 'SK Chairman', 'Barangay Tanod', 'Staff', 'Admin'];
-    return officialRoles.includes(user.role);
+    if (!user || !user.isOfficial) return false;
+    return user.isOfficial === true;
 }
 
 function isComplaintOwner(complaint, user = currentUser) {
@@ -86,6 +85,7 @@ function saveUserAccount(userObj) {
         lastName: userObj.lastName || '',
         email: userObj.email,
         role: userObj.role || 'Resident',
+        isOfficial: userObj.isOfficial || false,
         purok: userObj.purok || 'Purok 1',
         phone: userObj.phone || '',
         photo: userObj.photo || null
@@ -100,6 +100,7 @@ function saveUserAccount(userObj) {
             name: fullName || residents[residentIdx].name,
             purok: userObj.purok || residents[residentIdx].purok,
             role: userObj.role || residents[residentIdx].role,
+            isOfficial: userObj.isOfficial || residents[residentIdx].isOfficial,
             phone: userObj.phone || residents[residentIdx].phone,
             email: userObj.email,
             photo: userObj.photo || residents[residentIdx].photo || null
@@ -109,6 +110,7 @@ function saveUserAccount(userObj) {
             name: fullName,
             purok: userObj.purok || 'Purok 1',
             role: userObj.role || 'Resident',
+            isOfficial: userObj.isOfficial || false,
             phone: userObj.phone || 'N/A',
             email: userObj.email,
             photo: userObj.photo || null
@@ -1219,6 +1221,7 @@ function initAuthForms() {
                                     lastName: '',
                                     email: email,
                                     role: 'Resident',
+                                    isOfficial: false,
                                     purok: 'Purok 1',
                                     phone: '',
                                     photo: null
@@ -1265,6 +1268,7 @@ function initAuthForms() {
                             lastName,
                             email,
                             role: 'Resident',
+                            isOfficial: false,
                             purok,
                             phone: '',
                             photo: null
@@ -1278,6 +1282,7 @@ function initAuthForms() {
                             lastName,
                             email,
                             role: 'Resident',
+                            isOfficial: false,
                             purok,
                             phone: '',
                             photo: null,
