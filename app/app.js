@@ -1,8 +1,23 @@
+const firebaseConfig = {
+    apiKey: "AIzaSyCUn_OVro6-NBfIAn0SAcGZeV25HqiCvlc",
+    authDomain: "barangay-san-juan.firebaseapp.com",
+    databaseURL: "https://barangay-san-juan-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "barangay-san-juan",
+    storageBucket: "barangay-san-juan.firebasestorage.app",
+    messagingSenderId: "987977241267",
+    appId: "1:987977241267:web:4685a282641fcef2ccad6c6",
+    measurementId: "G-5XWG6ET1CE"
+};
+
+if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+    firebase.initializeApp(firebaseConfig);
+}
+
 const DEFAULT_USER = {
     firstName: 'Barangay',
-    lastName: 'Official',
-    email: 'official@juanforall.gov.ph',
-    role: 'Barangay Official',
+    lastName: 'Resident',
+    email: '',
+    role: 'Resident',
     purok: 'Purok 1',
     phone: '',
     photo: null
@@ -104,16 +119,17 @@ function saveUserAccount(userObj) {
     if (typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length > 0) {
         try {
             const db = firebase.firestore();
-            db.collection('users').doc(emailKey).set({
+            const userRef = db.collection('users').doc(emailKey);
+            const updates = {
                 firstName: userObj.firstName || '',
                 lastName: userObj.lastName || '',
                 email: userObj.email,
-                role: userObj.role || 'Resident',
                 purok: userObj.purok || 'Purok 1',
                 phone: userObj.phone || '',
                 photo: userObj.photo || null,
                 updatedAt: new Date().toISOString()
-            }, { merge: true }).catch(err => console.warn('Firestore set user:', err));
+            };
+            userRef.set(updates, { merge: true }).catch(err => console.warn('Firestore set user:', err));
         } catch (e) {}
     }
 }
@@ -146,23 +162,23 @@ function fetchUserFromStorage(email) {
 }
 
 function syncWithFirebaseRole() {
-    if (currentUser && currentUser.email && typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length > 0) {
-        try {
+    if (typeof firebase === 'undefined' || !firebase.firestore || !firebase.apps || firebase.apps.length === 0) return;
+    
+    firebase.auth().onAuthStateChanged(user => {
+        if (user && user.email) {
+            const emailKey = user.email.trim().toLowerCase();
             const db = firebase.firestore();
-            const emailKey = currentUser.email.trim().toLowerCase();
             db.collection('users').doc(emailKey).get().then(doc => {
                 if (doc.exists) {
                     const data = doc.data();
-                    if (data.role && data.role !== currentUser.role) {
-                        currentUser.role = data.role;
-                        saveUserAccount(currentUser);
-                        updateHeaderUserInfo();
-                        initAccountPage();
-                    }
+                    currentUser = { ...currentUser, ...data, email: user.email, id: user.uid };
+                    saveUserAccount(currentUser);
+                    updateHeaderUserInfo();
+                    initAccountPage();
                 }
             }).catch(() => {});
-        } catch (e) {}
-    }
+        }
+    });
 }
 
 function formatStatus(status) {
@@ -283,6 +299,9 @@ document.addEventListener('click', function(e) {
 
 window.handleLogout = function() {
     localStorage.removeItem('jfa_user');
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().signOut().catch(() => {});
+    }
     window.location.href = 'login.html';
 };
 
@@ -374,20 +393,7 @@ function updateHeaderUserInfo() {
     const dropdownBody = document.querySelector('.profile-dropdown .dropdown-body');
     if (dropdownBody) {
         let toggleLink = document.getElementById('dropdown-role-toggle');
-        if (!toggleLink) {
-            toggleLink = document.createElement('div');
-            toggleLink.id = 'dropdown-role-toggle';
-            dropdownBody.appendChild(toggleLink);
-        }
-        toggleLink.innerHTML = `
-            <a href="javascript:void(0)" class="dropdown-link" onclick="quickToggleRole()" style="border-top:1px solid #f1f5f9; margin-top:4px; padding-top:8px;">
-                <i class="ri-shield-flash-line" style="font-size:1.2rem; color:${isAdmin ? '#2563eb' : '#166534'};"></i>
-                <div class="link-text">
-                    <span class="link-title" style="font-weight:700; color:${isAdmin ? '#1e293b' : '#15803d'};">${isAdmin ? 'Switch to Resident' : 'Switch to Barangay Official'}</span>
-                    <span class="link-desc">${isAdmin ? 'Current Role: ' + currentUser.role : 'Enable Official Admin Powers'}</span>
-                </div>
-            </a>
-        `;
+        if (toggleLink) toggleLink.remove();
     }
     
     const addAnnouncementBtn = document.getElementById('add-announcement-btn');
@@ -420,11 +426,9 @@ function initAccountPage() {
     document.getElementById('acc-last-name').value = currentUser.lastName || '';
     document.getElementById('acc-email').value = currentUser.email || '';
     
-    const roleSelect = document.getElementById('acc-role');
-    if (roleSelect) {
-        roleSelect.value = currentUser.role || 'Resident';
-        roleSelect.disabled = false;
-        roleSelect.title = 'Select your Barangay Role';
+    const roleDisplay = document.getElementById('acc-role');
+    if (roleDisplay) {
+        roleDisplay.textContent = currentUser.role || 'Resident';
     }
 
     if (document.getElementById('acc-purok')) document.getElementById('acc-purok').value = currentUser.purok || 'Purok 1';
@@ -472,21 +476,6 @@ window.removeProfilePhoto = function() {
     showToast('Profile photo removed', 'info');
 };
 
-window.quickToggleRole = function() {
-    const newRole = isOfficial() ? 'Resident' : 'Barangay Official';
-    currentUser.role = newRole;
-    saveUserAccount(currentUser);
-
-    updateHeaderUserInfo();
-    initAccountPage();
-    renderAnnouncements();
-    renderComplaints();
-    renderSummons();
-    renderRecentBookings();
-    renderResidents();
-    showToast(`Role switched to ${newRole}!`, 'success');
-};
-
 window.saveAccountProfile = function() {
     const oldEmail = (currentUser.email || '').toLowerCase();
     const newFirstName = document.getElementById('acc-first-name').value.trim();
@@ -494,14 +483,12 @@ window.saveAccountProfile = function() {
     const newEmail = document.getElementById('acc-email').value.trim();
     const newPurok = document.getElementById('acc-purok').value;
     const newPhone = document.getElementById('acc-phone').value.trim();
-    const roleSelect = document.getElementById('acc-role');
 
     if (newFirstName) currentUser.firstName = newFirstName;
     if (newLastName) currentUser.lastName = newLastName;
     if (newEmail) currentUser.email = newEmail;
     if (newPurok) currentUser.purok = newPurok;
     if (newPhone) currentUser.phone = newPhone;
-    if (roleSelect && roleSelect.value) currentUser.role = roleSelect.value;
 
     if (oldEmail && oldEmail !== newEmail.toLowerCase()) {
         let userDb = getStorage('jfa_users_db', {});
@@ -517,7 +504,7 @@ window.saveAccountProfile = function() {
     renderSummons();
     renderRecentBookings();
     renderResidents();
-    showToast(`Account details saved! Role updated to ${currentUser.role}.`, 'success');
+    showToast('Account details saved!', 'success');
 };
 
 window.changeAccountPassword = function() {
@@ -538,10 +525,22 @@ window.changeAccountPassword = function() {
         return;
     }
 
-    document.getElementById('acc-current-pass').value = '';
-    document.getElementById('acc-new-pass').value = '';
-    document.getElementById('acc-confirm-pass').value = '';
-    showToast('Password updated successfully!', 'success');
+    if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+        const user = firebase.auth().currentUser;
+        const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPass);
+        user.reauthenticateWithCredential(credential).then(() => {
+            return user.updatePassword(newPass);
+        }).then(() => {
+            document.getElementById('acc-current-pass').value = '';
+            document.getElementById('acc-new-pass').value = '';
+            document.getElementById('acc-confirm-pass').value = '';
+            showToast('Password updated successfully!', 'success');
+        }).catch(err => {
+            showToast('Failed to update password: ' + (err.message || 'Incorrect current password'), 'error');
+        });
+    } else {
+        showToast('You must be logged in to change password', 'error');
+    }
 };
 
 window.openDeleteComplaintModal = function(id) {
@@ -1203,26 +1202,39 @@ function initAuthForms() {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
 
-            if (email && password) {
-                const fetched = fetchUserFromStorage(email);
-                if (fetched) {
-                    currentUser = fetched;
-                } else {
-                    currentUser = {
-                        firstName: email.split('@')[0],
-                        lastName: 'User',
-                        email: email,
-                        role: 'Resident',
-                        purok: 'Purok 1',
-                        phone: '',
-                        photo: null
-                    };
-                }
-                saveUserAccount(currentUser);
-                showToast('Login successful! Redirecting...', 'success');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 800);
+            if (!email || !password) return;
+
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                firebase.auth().signInWithEmailAndPassword(email, password)
+                    .then(userCredential => {
+                        const uid = userCredential.user.uid;
+                        const db = firebase.firestore();
+                        return db.collection('users').doc(email.trim().toLowerCase()).get().then(doc => {
+                            if (doc.exists) {
+                                currentUser = { id: uid, ...doc.data() };
+                            } else {
+                                currentUser = {
+                                    id: uid,
+                                    firstName: email.split('@')[0],
+                                    lastName: '',
+                                    email: email,
+                                    role: 'Resident',
+                                    purok: 'Purok 1',
+                                    phone: '',
+                                    photo: null
+                                };
+                                db.collection('users').doc(email.trim().toLowerCase()).set(currentUser, { merge: true }).catch(() => {});
+                            }
+                            saveUserAccount(currentUser);
+                            showToast('Login successful! Redirecting...', 'success');
+                            setTimeout(() => { window.location.href = 'index.html'; }, 800);
+                        });
+                    })
+                    .catch(err => {
+                        showToast('Login failed: ' + (err.message || 'Invalid credentials'), 'error');
+                    });
+            } else {
+                showToast('Firebase is not initialized. Please try again.', 'error');
             }
         };
     }
@@ -1243,26 +1255,66 @@ function initAuthForms() {
                 return;
             }
 
-            currentUser = {
-                firstName,
-                lastName,
-                email,
-                role: 'Resident',
-                purok,
-                phone: '',
-                photo: null
-            };
-            saveUserAccount(currentUser);
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                firebase.auth().createUserWithEmailAndPassword(email, password)
+                    .then(userCredential => {
+                        const uid = userCredential.user.uid;
+                        currentUser = {
+                            id: uid,
+                            firstName,
+                            lastName,
+                            email,
+                            role: 'Resident',
+                            purok,
+                            phone: '',
+                            photo: null
+                        };
+                        saveUserAccount(currentUser);
 
-            showToast('Account created successfully! Redirecting...', 'success');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 800);
+                        const db = firebase.firestore();
+                        db.collection('users').doc(email.trim().toLowerCase()).set({
+                            id: uid,
+                            firstName,
+                            lastName,
+                            email,
+                            role: 'Resident',
+                            purok,
+                            phone: '',
+                            photo: null,
+                            createdAt: new Date().toISOString()
+                        }, { merge: true }).catch(() => {});
+
+                        showToast('Account created successfully! Redirecting...', 'success');
+                        setTimeout(() => { window.location.href = 'index.html'; }, 800);
+                    })
+                    .catch(err => {
+                        showToast('Signup failed: ' + (err.message || 'Could not create account'), 'error');
+                    });
+            } else {
+                showToast('Firebase is not initialized. Please try again.', 'error');
+            }
         };
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Check Firebase Auth state for auth-required pages
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().onAuthStateChanged(user => {
+            // Pages that require auth: index, court, residents, summons, complaints, announcements, map, account
+            const protectedPages = ['index.html', 'court.html', 'residents.html', 'summons.html', 'complaints.html', 'announcements.html', 'map.html', 'account.html'];
+            const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+            const isLoginPage = currentPage === 'login.html' || currentPage === 'signup.html';
+            
+            if (!user && !isLoginPage && !protectedPages.includes(currentPage)) {
+                window.location.href = 'login.html';
+            } else if (user && isLoginPage) {
+                // User already logged in, redirect to dashboard
+                window.location.href = 'index.html';
+            }
+        });
+    }
+    
     updateHeaderUserInfo();
     initAccountPage();
     renderAnnouncements();
