@@ -1173,8 +1173,8 @@ function initMap() {
     const mapEl = document.getElementById('map');
     if (!mapEl || typeof L === 'undefined') return;
 
-    const lat = 13.4333;
-    const lng = 123.4167;
+    const lat = 13.42052035233499;
+    const lng = 123.41939689634692;
 
     const map = L.map('map').setView([lat, lng], 15);
 
@@ -1183,10 +1183,7 @@ function initMap() {
     }).addTo(map);
 
     const locations = [
-        { name: 'juanforall Barangay Hall', lat: 13.4333, lng: 123.4167, icon: 'ri-building-2-fill', color: '#166534' },
-        { name: 'Multipurpose Covered Court', lat: 13.4340, lng: 123.4175, icon: 'ri-basketball-line', color: '#2563eb' },
-        { name: 'Barangay Health Center', lat: 13.4325, lng: 123.4158, icon: 'ri-hospital-line', color: '#dc2626' },
-        { name: 'Purok 1 Outpost', lat: 13.4350, lng: 123.4180, icon: 'ri-shield-user-line', color: '#d97706' }
+        { name: 'juanforall Barangay Hall', lat: 13.42052035233499, lng: 123.41939689634692, icon: 'ri-building-2-fill', color: '#166534' }
     ];
 
     locations.forEach(loc => {
