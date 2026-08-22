@@ -1173,8 +1173,8 @@ function initMap() {
     const mapEl = document.getElementById('map');
     if (!mapEl || typeof L === 'undefined') return;
 
-    const lat = 13.42052035233499;
-    const lng = 123.41939689634692;
+    const lat = 13.420;
+    const lng = 123.419;
 
     const map = L.map('map').setView([lat, lng], 15);
 
@@ -1183,7 +1183,7 @@ function initMap() {
     }).addTo(map);
 
     const locations = [
-        { name: 'juanforall Barangay Hall', lat: 13.42052035233499, lng: 123.41939689634692, icon: 'ri-building-2-fill', color: '#166534' }
+        { name: 'juanforall Barangay Hall', lat: 13.420, lng: 123.419, icon: 'ri-building-2-fill', color: '#166534' }
     ];
 
     locations.forEach(loc => {
